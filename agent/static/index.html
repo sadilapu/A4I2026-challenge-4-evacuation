@@ -37,10 +37,10 @@
           <div class="flex items-center gap-2">
             <h1 class="text-base md:text-lg font-bold tracking-tight text-white">Lee County Adaptive Evacuation Command</h1>
             <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-              Voice + Persona AI
+              Voice + Persona AI + Live <span translate="no">Google Maps</span>
             </span>
           </div>
-          <p class="text-xs text-slate-400">Speak or ask any question — UI automatically adapts for <span class="text-cyan-300 font-medium">Local Emergency Planner</span> or <span class="text-rose-300 font-medium">Hospital / Clinical</span> operations</p>
+          <p class="text-xs text-slate-400">Speak or ask any question — UI & live <span translate="no">Google Maps</span> automatically adapt for <span class="text-cyan-300 font-medium">Local Emergency Planner</span> or <span class="text-rose-300 font-medium">Hospital / Clinical</span> operations</p>
         </div>
       </div>
 
@@ -183,7 +183,131 @@
       </div>
     </section>
 
-    <!-- 3. DYNAMIC ACTIONABLE OUTPUT: 3 EXECUTABLE ACTION CARDS + AI AGENT FEEDBACK -->
+    <!-- 3. INTERACTIVE VISUAL GOOGLE MAPS COMMAND PANEL + PERSONA PIN SELECTOR -->
+    <section id="visualMapSection" class="rounded-2xl border border-slate-800 bg-slate-900/95 p-5 shadow-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>🗺️ Live Interactive <span translate="no">Google Maps</span> Visual Command View</span>
+            </h3>
+            <span id="mapModeBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              📍 Facility & Evacuation Route View
+            </span>
+          </div>
+          <p id="mapTargetSubtext" class="text-xs text-slate-400 mt-0.5">
+            Automatically synced to your active persona, voice question, and selected shelter or nursing home transfer corridor
+          </p>
+        </div>
+
+        <!-- Map Controls: Road / Satellite Toggle + Verify Live with Vertex AI + Open in New Tab -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button id="mapTypeRoadBtn" onclick="setGoogleMapType('m')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-400 text-slate-950 transition">
+              🗺️ Road Map
+            </button>
+            <button id="mapTypeSatBtn" onclick="setGoogleMapType('k')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🛰️ Satellite
+            </button>
+          </div>
+
+          <button id="verifyActiveMapBtn" onclick="verifyCurrentMapTarget()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5">
+            <span>⚡</span>
+            <span>Ground Active Pin with <span translate="no">Google Maps</span> AI</span>
+          </button>
+
+          <a id="openExternalMapsLink" href="https://www.google.com/maps/search/?api=1&query=North+Fort+Myers+Academy+For+The+Arts+Fort+Myers+FL" target="_blank" rel="noopener noreferrer"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition flex items-center gap-1">
+            <span>↗</span>
+            <span>Open in <span translate="no">Google Maps</span></span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick-Pin Spatial Selector Strip (Auto-Adapts to Planner vs Hospital Persona) -->
+      <div class="mb-3">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+          <span id="quickPinStripTitle">📌 Click Any Priority Facility or Evacuation Route to Focus Map:</span>
+          <span class="text-[11px] text-slate-400">Source: <span translate="no">Google Maps</span> Live Embed</span>
+        </div>
+        <div id="mapQuickPinsContainer" class="flex flex-wrap gap-2">
+          <!-- Populated dynamically based on active persona & BigQuery data -->
+        </div>
+      </div>
+
+      <!-- Main Visual Map Frame + Active Spatial Telemetry Overlay Bar -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        <!-- Left/Main 8 Cols: Embedded Interactive Google Map Iframe -->
+        <div class="lg:col-span-8 rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-950 relative min-h-[360px] flex flex-col">
+          <iframe
+            id="googleMapsIframe"
+            title="Live Google Maps Facility & Evacuation Route View"
+            class="w-full h-[360px] md:h-[400px] border-0"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://maps.google.com/maps?q=North+Fort+Myers+Academy+For+The+Arts+1856+Arts+Way+North+Fort+Myers+FL&t=m&z=14&ie=UTF8&iwloc=&output=embed">
+          </iframe>
+          <div class="bg-slate-950/95 border-t border-slate-800 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2 text-slate-200 font-medium truncate">
+              <span class="text-cyan-400 font-bold">Active Map Focus:</span>
+              <span id="activeMapFocusLabel" class="truncate">North Fort Myers Academy For The Arts (1856 Arts Way, North Fort Myers, FL)</span>
+            </div>
+            <div class="text-[11px] text-slate-400 shrink-0">
+              Map data ©2026 <span translate="no">Google Maps</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 4 Cols: Active Facility / Corridor Spatial Intelligence Card -->
+        <div class="lg:col-span-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 flex flex-col justify-between gap-3">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <span id="mapDetailBadge" class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                PRIORITY SHELTER TARGET
+              </span>
+              <span class="text-[11px] text-slate-400 font-mono" id="mapDetailCoords">Lee County, FL</span>
+            </div>
+
+            <div>
+              <h4 id="mapDetailTitle" class="text-sm md:text-base font-bold text-white">
+                North Fort Myers Academy For The Arts
+              </h4>
+              <p id="mapDetailAddress" class="text-xs text-cyan-300 mt-0.5">
+                1856 Arts Way, North Fort Myers, FL
+              </p>
+            </div>
+
+            <p id="mapDetailSummary" class="text-xs text-slate-300 leading-relaxed bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+              #1 High-Capacity Shelter in Lee County (Effective Capacity: 2,500). Both wheelchair accessibility and backup generator status are UNRECORDED (NULL) in the 2022 FEMA National Shelter System registry.
+            </p>
+
+            <!-- Epistemic Status Breakdown on Map Card -->
+            <div id="mapDetailMetrics" class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="text-[10px] uppercase text-slate-400 font-semibold">Capacity / Scale</div>
+                <div id="mapMetricCap" class="text-sm font-bold text-white mt-0.5">2,500 Evacuees</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="text-[10px] uppercase text-slate-400 font-semibold">FEMA / CMS Status</div>
+                <div id="mapMetricStatus" class="text-sm font-bold text-amber-300 mt-0.5">ADA: UNRECORDED</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 space-y-2">
+            <button onclick="verifyCurrentMapTarget()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
+              <span>📍</span>
+              <span>Run Live <span translate="no">Google Maps</span> Grounding on This Target</span>
+            </button>
+            <div class="text-[11px] text-slate-400 text-center">
+              Powered by Vertex AI Grounding with <span translate="no">Google Maps</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. DYNAMIC ACTIONABLE OUTPUT: 3 EXECUTABLE ACTION CARDS + AI AGENT FEEDBACK -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
       
       <!-- Left 7 Cols: Tailored Actionable Cards for Identified Persona & Question -->
@@ -193,7 +317,7 @@
             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
               <span>⚡ Recommended Actions for Identified Persona</span>
             </h3>
-            <p class="text-xs text-slate-400">Click any action button to run live <span translate="no">Google Maps</span> Grounding or commit field updates to BigQuery</p>
+            <p class="text-xs text-slate-400">Click any action button to focus the visual map, run live <span translate="no">Google Maps</span> Grounding, or commit field updates to BigQuery</p>
           </div>
           <span id="actionDeckTag" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-300 border border-slate-700">
             Live Action Deck
@@ -217,11 +341,11 @@
         <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 flex-1 flex flex-col justify-between min-h-[340px]">
           <div id="agentFeedbackBox" class="space-y-3 text-sm text-slate-200 overflow-y-auto max-h-[380px] pr-1">
             <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 leading-relaxed">
-              <div class="font-bold text-cyan-300 mb-1">Voice + Persona Dynamic Readiness Interface:</div>
+              <div class="font-bold text-cyan-300 mb-1">Voice + Persona + Live <span translate="no">Google Maps</span> Interface:</div>
               <ul class="list-disc pl-4 space-y-1 text-slate-400">
                 <li><strong>1. Voice Interaction</strong>: Tap the microphone (or click a sample prompt) to speak your question; the agent speaks back an executive voice briefing.</li>
                 <li><strong>2. Automatic Persona Detection</strong>: Classifies whether you are asking as a <strong>Local Emergency Planner</strong> or <strong>Hospital / Clinical Coordinator</strong>.</li>
-                <li><strong>3. Dynamic Actionable UI</strong>: Reconfigures the 4 KPIs, 3 executable Action Cards, and live BigQuery table below to match your persona and question.</li>
+                <li><strong>3. Live Visual <span translate="no">Google Maps</span> & Action Deck</strong>: Automatically updates the interactive <span translate="no">Google Maps</span> panel, 4 KPIs, 3 Action Cards, and live BigQuery table to match your persona.</li>
               </ul>
             </div>
           </div>
@@ -238,18 +362,18 @@
 
     </div>
 
-    <!-- 4. DYNAMIC QUESTION-FILTERED DATA TABLE (AUTO-SWITCHES BY PERSONA) -->
+    <!-- 5. DYNAMIC QUESTION-FILTERED DATA TABLE (AUTO-SWITCHES BY PERSONA) -->
     <section class="rounded-2xl border border-slate-800 bg-slate-900/90 p-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <div class="flex items-center gap-2">
             <h3 id="dynamicTableTitle" class="text-base font-bold text-white">Priority Operational Records</h3>
             <span id="dynamicTablePersonaTag" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-              Auto-Synced with Persona
+              Auto-Synced with Persona & Map
             </span>
           </div>
           <p id="dynamicTableSubtitle" class="text-xs text-slate-400 mt-0.5">
-            Automatically displaying records matched to your identified persona and voice prompt
+            Click any row action to focus the interactive <span translate="no">Google Maps</span> view and run live Vertex AI Grounding
           </p>
         </div>
 
@@ -291,6 +415,24 @@
     let lastVoiceSummary = '';
     let activeSessionId = null;
 
+    // Interactive Google Maps Visual State
+    let currentMapType = 'm'; // 'm' = road map, 'k' = satellite
+    let currentMapTarget = {
+      placeName: 'North Fort Myers Academy For The Arts',
+      address: '1856 Arts Way',
+      city: 'North Fort Myers',
+      state: 'FL',
+      originLat: null,
+      originLon: null,
+      originLabel: '',
+      badge: 'PRIORITY 1 · GHOST SHELTER AUDIT',
+      summary: '#1 High-Capacity Shelter in Lee County (Effective Capacity: 2,500). Both wheelchair accessibility and backup generator status are UNRECORDED (NULL) in FEMA 2022 registry.',
+      metricCap: '2,500 Evacuees',
+      metricStatus: 'ADA & Gen: UNRECORDED',
+      coordsLabel: '26.6871, -81.8834'
+    };
+    let activeQuickPins = [];
+
     // Speech Recognition & MediaRecorder Fallback State
     let recognition = null;
     let isRecording = false;
@@ -319,6 +461,292 @@
         }
       } catch (err) {
         console.error('Initial persona load error:', err);
+      }
+    }
+
+    // =========================================================================
+    // INTERACTIVE GOOGLE MAPS VISUAL ENGINE (PLACE & ROUTE EMBED + PINS)
+    // =========================================================================
+    function setGoogleMapType(mapType) {
+      currentMapType = mapType === 'k' ? 'k' : 'm';
+      const roadBtn = document.getElementById('mapTypeRoadBtn');
+      const satBtn = document.getElementById('mapTypeSatBtn');
+      if (currentMapType === 'm') {
+        roadBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-400 text-slate-950 transition';
+        satBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+      } else {
+        satBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-400 text-slate-950 transition';
+        roadBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+      }
+      refreshGoogleMapsEmbed();
+    }
+
+    function updateVisualGoogleMap(targetConfig, scrollToMap = false) {
+      currentMapTarget = {
+        ...currentMapTarget,
+        ...targetConfig
+      };
+      refreshGoogleMapsEmbed();
+      if (scrollToMap) {
+        document.getElementById('visualMapSection')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function refreshGoogleMapsEmbed() {
+      const iframe = document.getElementById('googleMapsIframe');
+      const focusLabel = document.getElementById('activeMapFocusLabel');
+      const modeBadge = document.getElementById('mapModeBadge');
+      const openLink = document.getElementById('openExternalMapsLink');
+
+      const destQuery = `${currentMapTarget.placeName || ''} ${currentMapTarget.address || ''} ${currentMapTarget.city || 'Fort Myers'} ${currentMapTarget.state || 'FL'}`.trim();
+
+      let embedUrl = '';
+      let externalUrl = '';
+
+      if (currentMapTarget.originLat !== null && currentMapTarget.originLon !== null && currentMapTarget.originLat !== undefined && currentMapTarget.originLon !== undefined) {
+        const saddr = `${currentMapTarget.originLat},${currentMapTarget.originLon}`;
+        embedUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(saddr)}&daddr=${encodeURIComponent(destQuery)}&t=${currentMapType}&ie=UTF8&output=embed`;
+        externalUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(saddr)}&destination=${encodeURIComponent(destQuery)}`;
+        modeBadge.textContent = '🚌 Live Evacuation / Transfer Corridor Route';
+        modeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        focusLabel.textContent = `${currentMapTarget.originLabel || 'Origin Staging Point'} ➔ ${currentMapTarget.placeName} (${currentMapTarget.address}, ${currentMapTarget.city})`;
+      } else {
+        embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(destQuery)}&t=${currentMapType}&z=15&ie=UTF8&iwloc=&output=embed`;
+        externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destQuery)}`;
+        modeBadge.textContent = '📍 Single-Facility Ground-Truth Inspection View';
+        modeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+        focusLabel.textContent = `${currentMapTarget.placeName} — ${currentMapTarget.address}, ${currentMapTarget.city}, FL`;
+      }
+
+      if (iframe && iframe.src !== embedUrl) {
+        iframe.src = embedUrl;
+      }
+      if (openLink) {
+        openLink.href = externalUrl;
+      }
+
+      // Update right-side spatial intelligence card
+      document.getElementById('mapDetailBadge').textContent = currentMapTarget.badge || 'ACTIVE MAP TARGET';
+      document.getElementById('mapDetailCoords').textContent = currentMapTarget.coordsLabel || `${currentMapTarget.city || 'Lee County'}, FL`;
+      document.getElementById('mapDetailTitle').textContent = currentMapTarget.placeName || 'Lee County Facility';
+      document.getElementById('mapDetailAddress').textContent = currentMapTarget.originLabel
+        ? `Route: ${currentMapTarget.originLabel} ➔ ${currentMapTarget.address}, ${currentMapTarget.city}, FL`
+        : `${currentMapTarget.address || ''}, ${currentMapTarget.city || 'Fort Myers'}, FL`;
+      document.getElementById('mapDetailSummary').textContent = currentMapTarget.summary || '';
+      document.getElementById('mapMetricCap').textContent = currentMapTarget.metricCap || 'Verified';
+      document.getElementById('mapMetricStatus').textContent = currentMapTarget.metricStatus || 'Live Check';
+    }
+
+    function renderPersonaMapQuickPins(data) {
+      const container = document.getElementById('mapQuickPinsContainer');
+      if (!container || !data) return;
+
+      const pInfo = data.persona_info || {};
+      const isHospital = pInfo.persona === 'HOSPITAL';
+      const intent = pInfo.intent_topic || '';
+
+      const opt1 = data.option_1_shelter_audit || {};
+      const opt2 = data.option_2_zero_car_transit_lifeline || {};
+      const opt3 = data.option_3_medical_power_alert || {};
+
+      const topInspect = opt1.august_field_inspection_top3 || [];
+      const surgeList = opt1.surge_or_flood_exposed_shelters || [];
+      const topTracts = opt2.priority_zero_car_tracts || [];
+      const topNhs = opt3.top_nursing_homes || [];
+
+      const b1 = topInspect[0] || { shelter_name: 'North Fort Myers Academy For The Arts', address_1: '1856 Arts Way', city: 'North Fort Myers', effective_capacity: 2500 };
+      const s1 = surgeList[0] || { shelter_name: 'Dunbar High School - Pets', address_1: '3800 E Edison Ave', city: 'Fort Myers', effective_capacity: 240 };
+      const t1 = topTracts[0] || {};
+      const t1Coords = t1.pickup_staging_coordinates || { lat: 26.58598, lon: -81.87791, recommended_municipal_buses: 12 };
+      const t1Ns = t1.nearest_non_surge_shelter || { shelter_name: 'Franklin Park Elementary School', address_1: '2323 Ford St', city: 'Fort Myers', straight_line_distance_km: 1.56 };
+
+      const t2 = topTracts[1] || {};
+      const t2Coords = t2.pickup_staging_coordinates || { lat: 26.64789, lon: -81.63737, recommended_municipal_buses: 8 };
+      const t2Ns = t2.nearest_non_surge_shelter || { shelter_name: 'Harns Marsh Elementary School', address_1: '1800 Unice Ave N', city: 'Lehigh Acres', straight_line_distance_km: 7.19 };
+
+      const nh1 = topNhs[0] || { provider_name: 'PAGE REHABILITATION AND HEALTHCARE CENTER', provider_address: '2310 NORTH AIRPORT ROAD', city: 'FORT MYERS', certified_beds: 180, latitude: 26.5919, longitude: -81.8722 };
+      const nh1Gen = nh1.nearest_generator_confirmed_shelter || { shelter_name: 'South Fort Myers High School', address_1: '14020 Plantation Rd', city: 'Fort Myers', straight_line_distance_km: 6.32 };
+      const lehighNh = topNhs.find(n => (n.provider_name || '').toUpperCase().includes('LEHIGH')) || topNhs[1] || { provider_name: 'LEHIGH ACRES HEALTHCARE & REHAB CENTER', provider_address: '1550 LEE BOULEVARD', city: 'LEHIGH ACRES', certified_beds: 110, latitude: 26.6184, longitude: -81.6512 };
+
+      if (isHospital) {
+        activeQuickPins = [
+          {
+            label: `🚑 ${nh1.provider_name.slice(0, 19)} ➔ ${nh1Gen.shelter_name}`,
+            placeName: nh1Gen.shelter_name,
+            address: nh1Gen.address_1 || '14020 Plantation Rd',
+            city: nh1Gen.city || 'Fort Myers',
+            originLat: nh1.latitude || 26.5919,
+            originLon: nh1.longitude || -81.8722,
+            originLabel: `${nh1.provider_name} (${nh1.certified_beds} beds)`,
+            badge: 'CLINICAL MUTUAL-AID TRANSFER ROUTE',
+            summary: `Ambulance transfer route from ${nh1.provider_name} (${nh1.certified_beds} certified beds) to nearest confirmed generator shelter (${nh1Gen.shelter_name}, ${nh1Gen.straight_line_distance_km || 6.32} km). 31 surrounding shelters within 10km have UNRECORDED generator status.`,
+            metricCap: `${nh1.certified_beds} Nursing Beds`,
+            metricStatus: 'Dest Gen: CONFIRMED YES',
+            coordsLabel: `${nh1.latitude || 26.5919}, ${nh1.longitude || -81.8722}`
+          },
+          {
+            label: `🏥 Lehigh Acres Rehab (Renamed Check)`,
+            placeName: lehighNh.provider_name,
+            address: lehighNh.provider_address || '1550 LEE BOULEVARD',
+            city: lehighNh.city || 'Lehigh Acres',
+            originLat: null,
+            originLon: null,
+            originLabel: '',
+            badge: 'LIVE MAPS RENAME DETECTION',
+            summary: `Recorded in 2022 CMS registry as '${lehighNh.provider_name}' (${lehighNh.certified_beds} beds). Live Google Maps Grounding flags that this address now operates as 'Lehigh Acres Health and Rehabilitation Center'.`,
+            metricCap: `${lehighNh.certified_beds} Nursing Beds`,
+            metricStatus: 'Renamed on Google Maps',
+            coordsLabel: `${lehighNh.city}, FL`
+          },
+          {
+            label: `⚡ Estero Rec Center (Special Medical Shelter)`,
+            placeName: 'Estero Recreation Center',
+            address: '9200 Corkscrew Palms Blvd',
+            city: 'Estero',
+            originLat: null,
+            originLon: null,
+            originLabel: '',
+            badge: 'SPECIAL MEDICAL NEEDS SHELTER',
+            summary: `Lee County's designated Special Medical Needs shelter with confirmed backup generator (generator_onsite = YES) and wheelchair accessibility (YES) supporting oxygen & dialysis DME patients.`,
+            metricCap: '150 Medical Beds',
+            metricStatus: 'Gen: YES · Medical: YES',
+            coordsLabel: 'Estero, FL'
+          },
+          {
+            label: `🏛️ North Fort Myers Academy (Cap 2,500 Gen Triage)`,
+            placeName: b1.shelter_name,
+            address: b1.address_1 || '1856 Arts Way',
+            city: b1.city || 'North Fort Myers',
+            originLat: null,
+            originLon: null,
+            originLabel: '',
+            badge: 'HIGH-CAPACITY GENERATOR AUDIT TARGET',
+            summary: `2,500-capacity facility with UNRECORDED generator status in FEMA registry. Confirming backup power here relieves acute hospital ED boarding for 7,381 Medicare DME patients.`,
+            metricCap: '2,500 Evacuees',
+            metricStatus: 'Gen: UNRECORDED',
+            coordsLabel: 'North Fort Myers, FL'
+          }
+        ];
+      } else {
+        activeQuickPins = [
+          {
+            label: `🏛️ North Fort Myers Academy (Cap 2,500 Unrecorded)`,
+            placeName: b1.shelter_name,
+            address: b1.address_1 || '1856 Arts Way',
+            city: b1.city || 'North Fort Myers',
+            originLat: null,
+            originLon: null,
+            originLabel: '',
+            badge: 'AUGUST INSPECTION PRIORITY #1',
+            summary: `#1 High-Capacity Shelter in Lee County (Capacity: ${b1.effective_capacity || 2500}). Both wheelchair accessibility and backup generator status are UNRECORDED (NULL) in FEMA's 2022 registry.`,
+            metricCap: `${b1.effective_capacity || 2500} Evacuees`,
+            metricStatus: 'ADA & Gen: UNRECORDED',
+            coordsLabel: 'North Fort Myers, FL'
+          },
+          {
+            label: `🚌 Tract ${t1.geo_id || '12071001401'} Bus Route (639 Carless HH)`,
+            placeName: t1Ns.shelter_name || 'Franklin Park Elementary School',
+            address: t1Ns.address_1 || '2323 Ford St',
+            city: t1Ns.city || 'Fort Myers',
+            originLat: t1Coords.lat || 26.58598,
+            originLon: t1Coords.lon || -81.87791,
+            originLabel: `Tract ${t1.geo_id || '12071001401'} Bus Staging (${t1.households_no_vehicle || 639} carless HH)`,
+            badge: 'T-MINUS 48H LEETRAN BUS CORRIDOR',
+            summary: `Pre-position ${t1Coords.recommended_municipal_buses || 12} municipal buses at (${t1Coords.lat || 26.58598}, ${t1Coords.lon || -81.87791}). 25.4% of households have no vehicle and nearest confirmed wheelchair shelter is 6.12 km away.`,
+            metricCap: `${t1.households_no_vehicle || 639} Carless HH`,
+            metricStatus: `${t1Coords.recommended_municipal_buses || 12} LeeTran Buses`,
+            coordsLabel: `${t1Coords.lat || 26.58598}, ${t1Coords.lon || -81.87791}`
+          },
+          {
+            label: `🚌 Tract ${t2.geo_id || '12071001915'} Walkability Wall (7.19 km)`,
+            placeName: t2Ns.shelter_name || 'Harns Marsh Elementary School',
+            address: t2Ns.address_1 || '1800 Unice Ave N',
+            city: t2Ns.city || 'Lehigh Acres',
+            originLat: t2Coords.lat || 26.64789,
+            originLon: t2Coords.lon || -81.63737,
+            originLabel: `Tract ${t2.geo_id || '12071001915'} Bus Staging (${t2.households_no_vehicle || 456} carless HH)`,
+            badge: 'SEVERE WALKABILITY WALL (> 2.0 KM)',
+            summary: `456 zero-car households sit 7.19 km straight-line distance from the nearest non-surge shelter (${t2Ns.shelter_name || 'Harns Marsh Elementary'}) — 3.5x beyond the 2.0 km Walkability Wall.`,
+            metricCap: `${t2.households_no_vehicle || 456} Carless HH`,
+            metricStatus: '7.19 km to Shelter',
+            coordsLabel: `${t2Coords.lat || 26.64789}, ${t2Coords.lon || -81.63737}`
+          },
+          {
+            label: `🌊 ${s1.shelter_name || 'Dunbar High School'} (SLOSH Surge Zone)`,
+            placeName: s1.shelter_name || 'Dunbar High School',
+            address: s1.address_1 || '3800 E Edison Ave',
+            city: s1.city || 'Fort Myers',
+            originLat: null,
+            originLon: null,
+            originLabel: '',
+            badge: 'CRITICAL STORM SURGE EXPOSURE',
+            summary: `Explicitly flagged in_surge_slosh_area = TRUE in FEMA registry (alongside Harns Marsh Middle School). De-designate from coastal hurricane surge evacuation routing.`,
+            metricCap: `${s1.effective_capacity || 240} Cap (RESTRICT)`,
+            metricStatus: 'SLOSH Surge: YES',
+            coordsLabel: 'Fort Myers, FL'
+          }
+        ];
+      }
+
+      // Determine default pin index based on detected intent
+      let defaultIdx = 0;
+      if (!isHospital && intent === 'TRANSIT_LIFELINE') defaultIdx = 1;
+      else if (!isHospital && intent === 'SURGE_EXPOSURE') defaultIdx = 3;
+      else if (isHospital && intent === 'DME_OXYGEN_DIALYSIS') defaultIdx = 2;
+      else if (isHospital && intent === 'MEDICAL_SHELTER_ROUTING') defaultIdx = 1;
+
+      container.innerHTML = activeQuickPins.map((pin, idx) => `
+        <button
+          onclick="selectQuickPin(${idx})"
+          id="quickPinBtn-${idx}"
+          class="px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
+            idx === defaultIdx
+              ? (isHospital ? 'bg-rose-500 text-white border-rose-400 shadow-md' : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-md')
+              : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-800'
+          }"
+        >
+          <span>${escapeHtml(pin.label)}</span>
+        </button>
+      `).join('');
+
+      updateVisualGoogleMap(activeQuickPins[defaultIdx], false);
+    }
+
+    function selectQuickPin(idx) {
+      if (!activeQuickPins[idx]) return;
+      const isHospital = currentPersonaAction?.persona_info?.persona === 'HOSPITAL';
+      activeQuickPins.forEach((_, i) => {
+        const btn = document.getElementById(`quickPinBtn-${i}`);
+        if (!btn) return;
+        if (i === idx) {
+          btn.className = `px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
+            isHospital ? 'bg-rose-500 text-white border-rose-400 shadow-md' : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-md'
+          }`;
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-800';
+        }
+      });
+      updateVisualGoogleMap(activeQuickPins[idx], false);
+    }
+
+    async function verifyCurrentMapTarget() {
+      const btn = document.getElementById('verifyActiveMapBtn');
+      const orig = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Grounding with <span translate="no">Google Maps</span>...';
+      }
+      await quickVerifyFacility(
+        currentMapTarget.placeName,
+        currentMapTarget.address,
+        currentMapTarget.city,
+        currentMapTarget.originLat,
+        currentMapTarget.originLon,
+        currentMapTarget.originLabel
+      );
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = orig;
       }
     }
 
@@ -542,11 +970,11 @@
     async function submitQuestion(question, speakImmediately) {
       const statusEl = document.getElementById('agentStatusIndicator');
       const submitBtn = document.getElementById('submitPromptBtn');
-      statusEl.textContent = '⚡ Identifying Persona & Building Action Plan...';
+      statusEl.textContent = '⚡ Identifying Persona & Updating Live Map...';
       submitBtn.disabled = true;
       submitBtn.textContent = 'Analyzing...';
 
-      // Step 1: Instant Persona Classification & Actionable UI Update (/api/persona-action)
+      // Step 1: Instant Persona Classification & Actionable UI + Visual Map Update (/api/persona-action)
       try {
         const fastRes = await fetch('/api/persona-action', {
           method: 'POST',
@@ -600,8 +1028,8 @@
         }
       } catch (err) {
         prependAgentFeedbackCard({
-          title: 'Action Deck Active',
-          body: 'Displayed live BigQuery persona action deck above.',
+          title: 'Action Deck & Visual Map Active',
+          body: 'Displayed live BigQuery persona action deck and interactive <span translate="no">Google Maps</span> view above.',
           badge: 'Ready',
           tone: 'emerald'
         });
@@ -613,7 +1041,7 @@
     }
 
     // =========================================================================
-    // RENDER PERSONA BANNER, 4 KPIs, 3 EXECUTABLE ACTION CARDS & TABLE SYNC
+    // RENDER PERSONA BANNER, 4 KPIs, VISUAL GOOGLE MAP, 3 ACTION CARDS & TABLE
     // =========================================================================
     function renderPersonaActionDeck(data, shouldSpeak) {
       if (!data) return;
@@ -673,7 +1101,10 @@
         </div>
       `).join('');
 
-      // 4. Render 3 Executable Action Cards
+      // 4. Update Interactive Visual Google Maps Quick-Pins & Focus
+      renderPersonaMapQuickPins(data);
+
+      // 5. Render 3 Executable Action Cards
       const cardsContainer = document.getElementById('actionCardsContainer');
       const cards = data.action_cards || [];
       const btnStyle = isHospital
@@ -699,14 +1130,14 @@
         </div>
       `).join('');
 
-      // 5. Auto-Switch Dynamic Table View to Match Persona & Primary View
+      // 6. Auto-Switch Dynamic Table View to Match Persona & Primary View
       const primaryView = pInfo.primary_view || (isHospital ? 'medical' : 'shelters');
       const targetTab = primaryView === 'medical' ? 'medical' : (primaryView === 'transit' ? 'transit' : 'shelters');
       switchTableTab(targetTab);
     }
 
     // =========================================================================
-    // EXECUTE 1-CLICK ACTION CARD (GOOGLE MAPS GROUNDING OR BIGQUERY WRITE-BACK)
+    // EXECUTE 1-CLICK ACTION CARD (SYNCS VISUAL GOOGLE MAP + GROUNDING / BQ)
     // =========================================================================
     async function executePersonaActionCard(cardIndex) {
       if (!currentPersonaAction || !currentPersonaAction.action_cards) return;
@@ -716,7 +1147,22 @@
       const btn = document.getElementById(`actionCardBtn-${cardIndex}`);
       const origLabel = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '⏳ Executing Live...';
+      btn.innerHTML = '⏳ Updating Map & Executing...';
+
+      // Immediately sync the visual Google Map to this Action Card's facility or route
+      updateVisualGoogleMap({
+        placeName: card.place_name || card.shelter_name || 'North Fort Myers Academy For The Arts',
+        address: card.address || '1856 Arts Way',
+        city: card.city || 'Fort Myers',
+        state: 'FL',
+        originLat: card.origin_lat ?? null,
+        originLon: card.origin_lon ?? null,
+        originLabel: card.origin_label || '',
+        badge: card.badge || 'ACTIVE ACTION CARD TARGET',
+        summary: card.detail || '',
+        metricCap: card.origin_label ? 'Live Route Active' : 'Field Target',
+        metricStatus: card.action_type === 'field_audit' ? 'Field Audit -> YES' : 'Google Maps Grounded'
+      }, false);
 
       try {
         if (card.action_type === 'verify_place' || card.action_type === 'verify_route') {
@@ -788,7 +1234,7 @@
     }
 
     // =========================================================================
-    // DYNAMIC TABLE SWITCHER (SHELTERS / TRANSIT / MEDICAL)
+    // DYNAMIC TABLE SWITCHER (SHELTERS / TRANSIT / MEDICAL) + MAP SYNC
     // =========================================================================
     function switchTableTab(tab) {
       currentTableTab = tab;
@@ -817,7 +1263,7 @@
 
       if (tab === 'shelters') {
         title.textContent = '🏛️ Priority Evacuation Shelters — Storm Surge & ADA Inspection Queue (Local Planner)';
-        sub.textContent = 'UNRECORDED wheelchair/generator status means NULL in FEMA 2022 registry — verify or log field inspection in 1 click';
+        sub.textContent = 'UNRECORDED wheelchair/generator status means NULL in FEMA 2022 registry — click Maps Verify to focus the visual map & verify live';
         head.innerHTML = `
           <tr>
             <th class="py-2.5 px-3">Shelter Facility</th>
@@ -825,7 +1271,7 @@
             <th class="py-2.5 px-3">Effective Capacity</th>
             <th class="py-2.5 px-3">Storm Surge SLOSH</th>
             <th class="py-2.5 px-3">Wheelchair / Generator</th>
-            <th class="py-2.5 px-3 text-right">1-Click Live Action</th>
+            <th class="py-2.5 px-3 text-right">Map & Live Verify</th>
           </tr>
         `;
         const opt1 = currentPersonaAction.option_1_shelter_audit || {};
@@ -853,9 +1299,9 @@
                 <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-medium">ADA: ${escapeHtml(wc)} · Gen: ${escapeHtml(gen)}</span>
               </td>
               <td class="py-2.5 px-3 text-right">
-                <button onclick="quickVerifyFacility('${escapeJs(s.shelter_name)}', '${escapeJs(s.address_1 || '')}', '${escapeJs(s.city || 'Fort Myers')}')"
+                <button onclick="quickVerifyFacility('${escapeJs(s.shelter_name)}', '${escapeJs(s.address_1 || '')}', '${escapeJs(s.city || 'Fort Myers')}', null, null, '', '${Number(s.effective_capacity || 0).toLocaleString()} Evacuees', 'ADA: ${escapeJs(wc)} · Gen: ${escapeJs(gen)}')"
                   class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-semibold">
-                  📍 Maps Verify
+                  🗺️ Focus Map & Verify
                 </button>
               </td>
             </tr>
@@ -871,7 +1317,7 @@
             <th class="py-2.5 px-3">Nearest Non-Surge Shelter</th>
             <th class="py-2.5 px-3">Nearest Confirmed ADA Shelter</th>
             <th class="py-2.5 px-3">Bus Allocation</th>
-            <th class="py-2.5 px-3 text-right">1-Click Route Check</th>
+            <th class="py-2.5 px-3 text-right">Map Corridor & Verify</th>
           </tr>
         `;
         const opt2 = currentPersonaAction.option_2_zero_car_transit_lifeline || {};
@@ -888,9 +1334,9 @@
               <td class="py-2.5 px-3 text-rose-300 font-mono">${wc.straight_line_distance_km || '?'} km (${escapeHtml(wc.shelter_name || '')})</td>
               <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">${coords.recommended_municipal_buses || 6} Buses</span></td>
               <td class="py-2.5 px-3 text-right">
-                <button onclick="quickVerifyFacility('${escapeJs(ns.shelter_name || 'Franklin Park Elementary School')}', '${escapeJs(ns.address_1 || '2323 Ford St')}', '${escapeJs(ns.city || 'Fort Myers')}', ${coords.lat || 'null'}, ${coords.lon || 'null'}, 'Tract ${escapeJs(t.geo_id)} Bus Staging')"
+                <button onclick="quickVerifyFacility('${escapeJs(ns.shelter_name || 'Franklin Park Elementary School')}', '${escapeJs(ns.address_1 || '2323 Ford St')}', '${escapeJs(ns.city || 'Fort Myers')}', ${coords.lat || 'null'}, ${coords.lon || 'null'}, 'Tract ${escapeJs(t.geo_id)} Bus Staging', '${Number(t.households_no_vehicle || 0).toLocaleString()} Carless HH', '${coords.recommended_municipal_buses || 6} LeeTran Buses')"
                   class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-semibold">
-                  🚌 Verify Bus Route
+                  🚌 Map Route & Verify
                 </button>
               </td>
             </tr>
@@ -908,7 +1354,7 @@
             <th class="py-2.5 px-3">Certified Beds</th>
             <th class="py-2.5 px-3">10km Shelters (Gen Unrecorded)</th>
             <th class="py-2.5 px-3">Nearest Confirmed Generator Shelter</th>
-            <th class="py-2.5 px-3 text-right">1-Click Clinical Action</th>
+            <th class="py-2.5 px-3 text-right">Map Transfer & Verify</th>
           </tr>
         `;
         const rows = opt3.top_nursing_homes || [];
@@ -925,9 +1371,9 @@
               </td>
               <td class="py-2.5 px-3 text-slate-300">${escapeHtml(ngen.shelter_name || 'N/A')} (<span class="text-cyan-300 font-mono">${ngen.straight_line_distance_km || '?'} km</span>)</td>
               <td class="py-2.5 px-3 text-right">
-                <button onclick="quickVerifyFacility('${escapeJs(ngen.shelter_name || n.provider_name)}', '${escapeJs(ngen.address_1 || n.provider_address || '')}', '${escapeJs(ngen.city || n.city || 'Fort Myers')}', ${n.latitude || 'null'}, ${n.longitude || 'null'}, '${escapeJs(n.provider_name)}')"
+                <button onclick="quickVerifyFacility('${escapeJs(ngen.shelter_name || n.provider_name)}', '${escapeJs(ngen.address_1 || n.provider_address || '')}', '${escapeJs(ngen.city || n.city || 'Fort Myers')}', ${n.latitude || 'null'}, ${n.longitude || 'null'}, '${escapeJs(n.provider_name)} (${n.certified_beds || 0} beds)', '${Number(n.certified_beds || 0).toLocaleString()} Nursing Beds', 'Gen Confirmed Route')"
                   class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-semibold">
-                  🚑 Verify Transfer
+                  🚑 Map Transfer & Verify
                 </button>
               </td>
             </tr>
@@ -936,10 +1382,37 @@
       }
     }
 
-    async function quickVerifyFacility(placeName, address, city, originLat = null, originLon = null, originLabel = '') {
+    async function quickVerifyFacility(
+      placeName,
+      address,
+      city,
+      originLat = null,
+      originLon = null,
+      originLabel = '',
+      metricCap = 'Verified Facility',
+      metricStatus = 'Google Maps Live Check'
+    ) {
+      // Immediately update the visual Google Map iframe and detail card
+      updateVisualGoogleMap({
+        placeName,
+        address,
+        city: city || 'Fort Myers',
+        state: 'FL',
+        originLat,
+        originLon,
+        originLabel,
+        badge: originLat ? 'LIVE EVACUATION / TRANSFER ROUTE' : 'SINGLE-FACILITY GROUNDING TARGET',
+        summary: originLabel
+          ? `Visualizing evacuation/transfer corridor from ${originLabel} to ${placeName} (${address}, ${city}, FL) and running live Vertex AI Grounding with Google Maps.`
+          : `Inspecting ${placeName} at ${address}, ${city}, FL on Google Maps and verifying current operational name & status via Vertex AI Grounding.`,
+        metricCap,
+        metricStatus,
+        coordsLabel: originLat ? `${originLat}, ${originLon}` : `${city || 'Fort Myers'}, FL`
+      }, false);
+
       prependAgentFeedbackCard({
         title: `📍 Verifying ${placeName} on Google Maps...`,
-        body: `Checking live building status & evacuation corridor at ${escapeHtml(address)}, ${escapeHtml(city)}...`,
+        body: `Updated visual map & checking live building status / corridor at ${escapeHtml(address)}, ${escapeHtml(city)}...`,
         badge: 'Running Grounding',
         tone: 'cyan'
       });
@@ -960,6 +1433,8 @@
         const json = await res.json();
         if (json.status === 'ok') {
           const findings = json.grounded_findings || 'Verified on Google Maps.';
+          document.getElementById('mapDetailSummary').textContent = findings.slice(0, 320);
+          document.getElementById('mapMetricStatus').textContent = json.verification_badge || 'LIVE_GROUNDED';
           prependAgentFeedbackCard({
             title: `✅ ${json.verification_badge || 'Google Maps Verified'}: ${placeName}`,
             body: `<p>${formatMarkdownSimple(findings)}</p><p class="text-[11px] text-cyan-300 mt-1">${json.attribution_html || 'Source: <span translate="no">Google Maps</span>'}</p>`,
