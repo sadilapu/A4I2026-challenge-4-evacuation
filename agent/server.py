@@ -179,9 +179,9 @@ async def api_list_counties() -> Dict[str, Any]:
 @app.get("/api/brief/{county_fips}")
 async def generate_county_readiness_brief(
     county_fips: str = DEFAULT_COUNTY_FIPS,
-    include_live_maps: bool = True,
+    include_live_maps: bool = False,
 ) -> Dict[str, Any]:
-    """Run all 4 Readiness Brief pillars + parallel live Google Maps Grounding."""
+    """Run all 4 Readiness Brief pillars + optional parallel live Google Maps Grounding."""
     loop = asyncio.get_running_loop()
 
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -270,7 +270,7 @@ async def generate_county_readiness_brief(
             ]
             live_grounding_results = list(await asyncio.gather(*futures))
 
-    return {
+    payload = {
         "status": "ok",
         "county_fips": county_fips,
         "option_1_shelter_audit": shelter_audit,
@@ -279,6 +279,7 @@ async def generate_county_readiness_brief(
         "post_hoc_equity_audit": equity_audit,
         "live_maps_grounding_spotlights": live_grounding_results,
     }
+    return {**payload, "data": payload}
 
 
 @app.post("/api/verify-place")
@@ -355,7 +356,7 @@ async def api_persona_action(req: PersonaActionRequest) -> Dict[str, Any]:
         req.question,
         req.county_fips,
     )
-    return {"status": "ok", **result}
+    return {"status": "ok", "data": result, **result}
 
 
 @app.post("/api/chat")

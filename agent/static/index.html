@@ -248,9 +248,9 @@
       <div class="mt-4 pt-3.5 border-t border-slate-800/80 flex flex-wrap items-center gap-2">
         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">Try a 1-Click Question:</span>
 
-        <button onclick="triggerSampleQuestion('As a local emergency planner in Lee County, where should we stage transit buses for families without cars and which shelters need a safety check?')"
+        <button onclick="triggerActiveCountySample('PLANNER')"
           class="px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition">
-          🚌 Lee County: Bus Pickups &amp; Shelter Checks
+          🚌 Selected County: Bus Pickups &amp; Shelter Checks
         </button>
 
         <button onclick="triggerSampleQuestion('Switch to Miami-Dade County and show me hurricane shelters and bus pickup zones for families without cars.')"
@@ -263,7 +263,7 @@
           ⚡ Hillsborough (Tampa): Flood Zones &amp; Nursing Homes
         </button>
 
-        <button onclick="triggerSampleQuestion('We are a hospital and nursing home team in Lee County: which nursing homes and oxygen-dependent patients are surrounded by shelters without confirmed generators?')"
+        <button onclick="triggerActiveCountySample('HOSPITAL')"
           class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-medium transition">
           🏥 Hospital View: Nursing Homes &amp; Backup Power
         </button>
@@ -739,7 +739,7 @@
       initSpeechRecognition();
       initInteractiveOverlayMap();
       await loadAvailableCounties();
-      await loadCountyWorkspace(activeCountyFips, false);
+      await loadCountyWorkspace(activeCountyFips, true);
     });
 
     async function loadAvailableCounties() {
@@ -764,11 +764,28 @@
 
     async function onCountyDropdownChange(newFips) {
       if (!newFips) return;
+      unlockAudioPlayerOnGesture();
       stopSpeaking();
       activeCountyFips = newFips;
       const found = availableCounties.find(c => c.county_fips === newFips);
       if (found) {
         activeCountyName = `${found.county_name} County, ${found.state || 'FL'}`;
+        if (overlayMap && Number.isFinite(Number(found.center_lat)) && Number.isFinite(Number(found.center_lon))) {
+          overlayMap.setView([Number(found.center_lat), Number(found.center_lon)], 10, { animate: true });
+        }
+        inspectOverlayPin({
+          name: activeCountyName,
+          title: activeCountyName,
+          address: `${found.total_shelters || 0} registered shelters`,
+          city: found.county_name || '',
+          state: found.state || 'FL',
+          lat: found.center_lat,
+          lon: found.center_lon,
+          badge: 'Selected County Overview',
+          summary: `Loading shelters, coastal flood zones, bus pickup routes, and nursing home backup power readiness for ${activeCountyName}...`,
+          metric_cap: `${Number(found.total_capacity || 0).toLocaleString()} Total Spaces`,
+          metric_status: 'Loading County Data...'
+        }, false);
       }
       updateActiveCountyLabels(activeCountyFips, activeCountyName);
       const q = currentPersonaMode === 'HOSPITAL'
@@ -799,6 +816,17 @@
 
       const mapPill = document.getElementById('mapCountyPill');
       if (mapPill) mapPill.textContent = activeCountyName;
+
+      const headline = document.getElementById('personaHeadline');
+      if (headline) {
+        headline.textContent = currentPersonaMode === 'HOSPITAL'
+          ? `${activeCountyName} — Nursing Home Transfer, Oxygen/Dialysis & Generator Readiness`
+          : `${activeCountyName} — Shelter Safety Checks, Flood Warnings & Bus Pickup Routes`;
+      }
+      const intentTag = document.getElementById('personaIntentTag');
+      if (intentTag) {
+        intentTag.textContent = `${activeCountyName} · County Shelter & Transit Overview`;
+      }
     }
 
     async function loadCountyWorkspace(countyFips, speakResult = false, customQuestion = null) {
@@ -806,28 +834,21 @@
         setAgentStatus('Loading ' + activeCountyName + '...', 'amber');
         const defaultQ = customQuestion || `Give me a complete plain-English hurricane evacuation overview for ${activeCountyName}.`;
 
-        const [briefRes, personaRes] = await Promise.all([
-          fetch(`/api/brief/${countyFips}`),
-          fetch('/api/persona-action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: defaultQ, county_fips: countyFips })
-          })
-        ]);
+        const personaRes = await fetch('/api/persona-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: defaultQ, county_fips: countyFips })
+        });
 
-        const briefJson = await briefRes.json();
         const personaJson = await personaRes.json();
+        const payload = personaJson.data || personaJson;
 
-        if (briefJson.status === 'ok') {
-          briefData = briefJson.data;
-        }
-        if (personaJson.status === 'ok') {
-          currentPersonaAction = personaJson.data;
-          syncCountyFromPayload(currentPersonaAction);
-          renderPersonaActionPayload(currentPersonaAction, speakResult);
-        }
-        if (briefData) {
-          renderFullCountyTables(briefData);
+        if (personaJson.status === 'ok' && payload) {
+          currentPersonaAction = payload;
+          briefData = payload;
+          syncCountyFromPayload(payload);
+          renderPersonaActionPayload(payload, speakResult);
+          renderFullCountyTables(payload);
         }
         setAgentStatus('Ready', 'emerald');
       } catch (err) {
@@ -841,20 +862,7 @@
       const fips = data.county_fips || data.active_county?.county_fips;
       const label = data.county_label || (data.county_name ? `${data.county_name} County, FL` : null);
       if (fips && fips !== activeCountyFips) {
-        const previousFips = activeCountyFips;
         updateActiveCountyLabels(fips, label || `County ${fips}`);
-        // Also refresh the full directory tables for the newly detected county
-        if (previousFips !== fips) {
-          fetch(`/api/brief/${fips}`)
-            .then(r => r.json())
-            .then(j => {
-              if (j.status === 'ok' && j.data) {
-                briefData = j.data;
-                renderFullCountyTables(briefData);
-              }
-            })
-            .catch(e => console.warn('Could not refresh tables for county:', e));
-        }
       } else if (label) {
         updateActiveCountyLabels(activeCountyFips, label);
       }
@@ -925,7 +933,7 @@
         if (el) el.textContent = counts[k];
       });
 
-      drawFilteredOverlayPins(true);
+      drawFilteredOverlayPins(true, mapOverlays);
     }
 
     function setMapOverlayCategoryFilter(category) {
@@ -943,7 +951,7 @@
       drawFilteredOverlayPins(true);
     }
 
-    function drawFilteredOverlayPins(shouldFitBounds = true) {
+    function drawFilteredOverlayPins(shouldFitBounds = true, mapOverlaysMeta = null) {
       if (!overlayMap || !overlayLayerGroup) return;
       overlayLayerGroup.clearLayers();
       markerById = {};
@@ -1040,6 +1048,21 @@
 
       if (shouldFitBounds && latLngBounds.length > 0) {
         overlayMap.fitBounds(latLngBounds, { padding: [42, 42], maxZoom: 13 });
+      } else if (mapOverlaysMeta && Number.isFinite(Number(mapOverlaysMeta.center_lat)) && Number.isFinite(Number(mapOverlaysMeta.center_lon))) {
+        overlayMap.setView([Number(mapOverlaysMeta.center_lat), Number(mapOverlaysMeta.center_lon)], Number(mapOverlaysMeta.zoom || 11));
+        inspectOverlayPin({
+          name: activeCountyName,
+          title: activeCountyName,
+          address: '',
+          city: mapOverlaysMeta.county_name || activeCountyName,
+          state: mapOverlaysMeta.state || 'FL',
+          lat: mapOverlaysMeta.center_lat,
+          lon: mapOverlaysMeta.center_lon,
+          badge: 'Selected County Center',
+          summary: `Showing ${activeCountyName} on the map.`,
+          metric_cap: 'County Overview',
+          metric_status: 'Ready'
+        }, false);
       }
     }
 
@@ -1154,6 +1177,38 @@
     // =========================================================================
     // NATURAL GEMINI VOICE READBACK + PROMINENT STOP AUDIO CONTROL
     // =========================================================================
+    // Tiny valid 1-sample silent WAV to unlock HTML5 <audio> on user click/change gesture
+    const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
+    function unlockAudioPlayerOnGesture() {
+      const audioPlayer = document.getElementById('geminiAudioPlayer');
+      if (!audioPlayer) return;
+      try {
+        audioPlayer.src = SILENT_WAV_DATA_URI;
+        const p = audioPlayer.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    function cancelActiveAudioSilently() {
+      if (currentTtsAbortController) {
+        try { currentTtsAbortController.abort(); } catch (e) {}
+        currentTtsAbortController = null;
+      }
+      const audioPlayer = document.getElementById('geminiAudioPlayer');
+      if (audioPlayer) {
+        try {
+          audioPlayer.pause();
+          audioPlayer.currentTime = 0;
+        } catch (e) {}
+      }
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+    }
+
     async function speakBriefing(text) {
       if (!text) return;
       lastSpokenSummary = text;
@@ -1167,8 +1222,8 @@
 
       if (!autoSpeakEnabled) return;
 
-      // Cancel any previous audio immediately before starting a new readback
-      stopSpeaking();
+      // Cancel any previous audio silently before starting a new readback
+      cancelActiveAudioSilently();
 
       const headerStopBtn = document.getElementById('stopSpeechBtn');
       const inlineStopBtn = document.getElementById('inlineStopVoiceBtn');
@@ -1219,42 +1274,30 @@
         console.warn('Gemini natural TTS fell back to browser speech:', err);
       }
 
-      // Fallback to browser voice if network/TTS unavailable
+      // Fallback to browser voice if network/TTS unavailable or autoplay blocked
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(humanizeText(text));
-        utter.rate = 1.0;
-        if (engineBadge) engineBadge.textContent = '🔊 Playing Voice Readback';
-        utter.onend = () => resetAudioUiIndicators();
-        utter.onerror = () => resetAudioUiIndicators();
-        window.speechSynthesis.speak(utter);
+        try {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(humanizeText(text));
+          utter.rate = 1.0;
+          const voices = window.speechSynthesis.getVoices() || [];
+          const preferredVoice = voices.find(v => /Google US English|Samantha|Natural|Ava|Allison|Karen/i.test(v.name))
+            || voices.find(v => v.lang && v.lang.startsWith('en'));
+          if (preferredVoice) utter.voice = preferredVoice;
+          if (engineBadge) engineBadge.textContent = '🔊 Playing Voice Readback (Click Replay Audio for Gemini Kore Voice)';
+          utter.onend = () => resetAudioUiIndicators();
+          utter.onerror = () => resetAudioUiIndicators('🔊 Click "Replay Audio" to Hear Gemini Natural Voice');
+          window.speechSynthesis.speak(utter);
+        } catch (e) {
+          resetAudioUiIndicators('🔊 Click "Replay Audio" to Hear Gemini Natural Voice');
+        }
       } else {
-        resetAudioUiIndicators();
+        resetAudioUiIndicators('🔊 Click "Replay Audio" to Hear Gemini Natural Voice');
       }
     }
 
     function stopSpeaking() {
-      // 1. Abort any in-flight /api/voice-tts fetch
-      if (currentTtsAbortController) {
-        try { currentTtsAbortController.abort(); } catch (e) {}
-        currentTtsAbortController = null;
-      }
-
-      // 2. Stop HTML5 <audio id="geminiAudioPlayer">
-      const audioPlayer = document.getElementById('geminiAudioPlayer');
-      if (audioPlayer) {
-        try {
-          audioPlayer.pause();
-          audioPlayer.currentTime = 0;
-          audioPlayer.removeAttribute('src');
-        } catch (e) {}
-      }
-
-      // 3. Stop browser speechSynthesis fallback
-      if ('speechSynthesis' in window) {
-        try { window.speechSynthesis.cancel(); } catch (e) {}
-      }
-
+      cancelActiveAudioSilently();
       resetAudioUiIndicators('⏹ Audio Readback Stopped');
     }
 
@@ -1274,15 +1317,18 @@
     }
 
     function replayLastVoiceBrief() {
-      if (lastSpokenSummary) {
+      unlockAudioPlayerOnGesture();
+      const textToSpeak = lastSpokenSummary || document.getElementById('voiceSummaryText')?.textContent || '';
+      if (textToSpeak) {
         const prev = autoSpeakEnabled;
         autoSpeakEnabled = true;
-        speakBriefing(lastSpokenSummary);
+        speakBriefing(textToSpeak);
         autoSpeakEnabled = prev;
       }
     }
 
     function toggleAutoSpeak() {
+      unlockAudioPlayerOnGesture();
       autoSpeakEnabled = !autoSpeakEnabled;
       const btn = document.getElementById('ttsToggleBtn');
       const icon = document.getElementById('ttsToggleIcon');
@@ -1291,6 +1337,9 @@
         btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition flex items-center gap-1.5';
         icon.textContent = '🔊';
         label.textContent = 'Natural Voice: ON';
+        if (lastSpokenSummary) {
+          speakBriefing(lastSpokenSummary);
+        }
       } else {
         stopSpeaking();
         btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 transition flex items-center gap-1.5';
@@ -1338,6 +1387,7 @@
     }
 
     async function toggleVoiceRecording() {
+      unlockAudioPlayerOnGesture();
       // Stop any ongoing TTS readback when user taps microphone to speak
       stopSpeaking();
 
@@ -1427,7 +1477,17 @@
     // =========================================================================
     // SUBMIT VOICE OR TEXT QUESTION -> DYNAMIC COUNTY + OVERLAYS + NATURAL VOICE
     // =========================================================================
+    function triggerActiveCountySample(roleMode) {
+      unlockAudioPlayerOnGesture();
+      if (roleMode === 'HOSPITAL') {
+        triggerSampleQuestion(`We are a hospital and nursing home team in ${activeCountyName}: which nursing homes and oxygen-dependent patients are surrounded by shelters without confirmed generators?`);
+      } else {
+        triggerSampleQuestion(`As a local emergency planner in ${activeCountyName}, where should we stage transit buses for families without cars and which shelters need a safety check?`);
+      }
+    }
+
     function triggerSampleQuestion(q) {
+      unlockAudioPlayerOnGesture();
       document.getElementById('voiceQueryInput').value = q;
       submitVoiceOrTextQuery(q);
     }
@@ -1437,6 +1497,7 @@
       const q = (explicitQuery || inputEl.value || '').trim();
       if (!q) return;
 
+      unlockAudioPlayerOnGesture();
       stopSpeaking();
       const btn = document.getElementById('submitQueryBtn');
       btn.disabled = true;
@@ -1452,10 +1513,13 @@
           body: JSON.stringify({ question: q, county_fips: activeCountyFips })
         });
         const fastJson = await fastRes.json();
-        if (fastJson.status === 'ok' && fastJson.data) {
-          currentPersonaAction = fastJson.data;
-          syncCountyFromPayload(currentPersonaAction);
-          renderPersonaActionPayload(currentPersonaAction, true);
+        const fastPayload = fastJson.data || fastJson;
+        if (fastJson.status === 'ok' && fastPayload) {
+          currentPersonaAction = fastPayload;
+          briefData = fastPayload;
+          syncCountyFromPayload(fastPayload);
+          renderPersonaActionPayload(fastPayload, true);
+          renderFullCountyTables(fastPayload);
         }
 
         // 2. Full ADK Agent Reasoning & Live Grounding in parallel
@@ -1472,9 +1536,12 @@
         const chatJson = await chatRes.json();
         if (chatJson.status === 'ok') {
           if (chatJson.persona_action) {
-            currentPersonaAction = chatJson.persona_action;
-            syncCountyFromPayload(currentPersonaAction);
-            renderPersonaActionPayload(currentPersonaAction, false);
+            const pAct = chatJson.persona_action.data || chatJson.persona_action;
+            currentPersonaAction = pAct;
+            briefData = pAct;
+            syncCountyFromPayload(pAct);
+            renderPersonaActionPayload(pAct, false);
+            renderFullCountyTables(pAct);
           }
           prependAgentFeedbackCard({
             title: `${currentPersonaAction?.persona_info?.persona_badge || '🧭'} Detailed Answer (${activeCountyName})`,
@@ -1499,6 +1566,7 @@
     }
 
     function switchPersonaMode(mode) {
+      unlockAudioPlayerOnGesture();
       currentPersonaMode = mode;
       if (mode === 'HOSPITAL') {
         triggerSampleQuestion(`We are a hospital and nursing home team in ${activeCountyName}: which nursing homes and electricity-dependent patients need backup generator shelter support?`);
@@ -1545,7 +1613,7 @@
         iconBox.textContent = '🏥';
         roleTag.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30';
         roleTag.textContent = 'Hospital & Nursing Home View';
-        intentTag.textContent = `${countyDisplay} · ${humanizeText(pInfo.intent_label || 'Clinical Power Readiness')}`;
+        intentTag.textContent = `${humanizeText(pInfo.intent_label || countyDisplay + ' — Clinical Power Readiness')}`;
         headline.textContent = `${countyDisplay} — Nursing Home Transfer, Oxygen/Dialysis & Generator Readiness`;
         subheadline.textContent = 'Highlighting nursing homes, homebound patients on electric medical devices, and shelters with confirmed backup generators.';
         hospitalBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-500/25 text-rose-200 transition';
@@ -1556,14 +1624,14 @@
         iconBox.textContent = '🏛️';
         roleTag.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
         roleTag.textContent = 'Local Emergency Planner View';
-        intentTag.textContent = `${countyDisplay} · ${humanizeText(pInfo.intent_label || 'Shelter & Bus Readiness')}`;
+        intentTag.textContent = `${humanizeText(pInfo.intent_label || countyDisplay + ' — Shelter & Bus Readiness')}`;
         headline.textContent = `${countyDisplay} — Shelter Safety Checks, Flood Warnings & Bus Pickup Routes`;
         subheadline.textContent = 'Highlighting shelters needing quick safety checks, coastal flood zones, and bus pickup routes for families without cars.';
         plannerBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-cyan-500/50 bg-cyan-500/25 text-cyan-200 transition';
         hospitalBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
       }
 
-      // Render 4 Plain-English KPIs
+      // Render 4 Plain-English KPIs (supporting both k.sub / k.subtext and k.color / k.tone)
       const kpiGrid = document.getElementById('personaKpiGrid');
       const toneMap = {
         amber: 'border-amber-500/30 bg-amber-950/20 text-amber-300',
@@ -1571,45 +1639,65 @@
         rose: 'border-rose-500/30 bg-rose-950/20 text-rose-300',
         emerald: 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300'
       };
-      kpiGrid.innerHTML = (data.persona_kpis || []).map(k => `
-        <div class="rounded-2xl border p-4 ${toneMap[k.tone] || toneMap.cyan}">
-          <div class="text-[11px] font-bold uppercase tracking-wider opacity-80">${escapeHtml(humanizeText(k.label))}</div>
-          <div class="text-xl md:text-2xl font-extrabold text-white mt-1">${escapeHtml(humanizeText(k.value))}</div>
-          <div class="text-xs opacity-90 mt-1 leading-snug">${escapeHtml(humanizeText(k.subtext))}</div>
-        </div>
-      `).join('');
+      const colorToTone = {
+        '#38bdf8': 'cyan',
+        '#d8b4fe': 'amber',
+        '#fbbf24': 'amber',
+        '#f87171': 'rose',
+        '#4ade80': 'emerald'
+      };
+      kpiGrid.innerHTML = (data.persona_kpis || []).map(k => {
+        const toneKey = k.tone || colorToTone[k.color] || 'cyan';
+        const subText = k.subtext || k.sub || '';
+        return `
+          <div class="rounded-2xl border p-4 ${toneMap[toneKey] || toneMap.cyan}">
+            <div class="text-[11px] font-bold uppercase tracking-wider opacity-80">${escapeHtml(humanizeText(k.label))}</div>
+            <div class="text-xl md:text-2xl font-extrabold text-white mt-1">${escapeHtml(humanizeText(k.value))}</div>
+            <div class="text-xs opacity-90 mt-1 leading-snug">${escapeHtml(humanizeText(subText))}</div>
+          </div>
+        `;
+      }).join('');
 
       // Render Plain-English Recommended Action Cards
       const deckTitle = document.getElementById('actionDeckTitle');
       deckTitle.innerHTML = isHospital
-        ? '<span>🏥</span><span>Hospital &amp; Nursing Home Action Checklist</span>'
-        : '<span>🏛️</span><span>Emergency Planner Action Checklist</span>';
+        ? `<span>🏥</span><span>Hospital &amp; Nursing Home Action Checklist (${escapeHtml(countyDisplay)})</span>`
+        : `<span>🏛️</span><span>Emergency Planner Action Checklist (${escapeHtml(countyDisplay)})</span>`;
 
       const cardsBox = document.getElementById('actionCardsContainer');
       const urgencyStyles = {
         CRITICAL: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
         HIGH: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
         IMMEDIATE: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-        MANDATORY: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+        MANDATORY: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        no: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        surge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        unrec: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+        renamed: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+        yes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
       };
 
       cardsBox.innerHTML = (data.action_cards || []).map((c, idx) => {
-        const uClass = urgencyStyles[c.urgency] || urgencyStyles.HIGH;
+        const badgeLabel = c.badge || (c.urgency ? `Step ${idx + 1} · ${c.urgency}` : `Step ${idx + 1}`);
+        const detailText = c.why_it_matters || c.detail || '';
+        const uClass = urgencyStyles[c.urgency] || urgencyStyles[c.badge_class] || urgencyStyles.HIGH;
+        const aType = String(c.action_type || '').toLowerCase();
+        const p = c.action_payload || c;
         let btnHtml = '';
-        if (c.action_type === 'VERIFY_PLACE' && c.action_payload) {
-          const p = c.action_payload;
+        if (aType === 'verify_place' || aType === 'verify_route') {
+          const btnLabel = c.action_label || '📍 Show on Map & Verify';
           btnHtml = `
-            <button onclick="quickVerifyFacility('${escapeJs(p.place_name)}', '${escapeJs(p.address)}', '${escapeJs(p.city)}', ${p.origin_lat || 'null'}, ${p.origin_lon || 'null'}, '${escapeJs(p.origin_label || '')}')"
+            <button onclick="quickVerifyFacility('${escapeJs(p.place_name || '')}', '${escapeJs(p.address || '')}', '${escapeJs(p.city || '')}', ${p.origin_lat || 'null'}, ${p.origin_lon || 'null'}, '${escapeJs(p.origin_label || '')}')"
               class="px-3.5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs transition shrink-0 shadow">
-              📍 Show on Map &amp; Verify
+              ${escapeHtml(btnLabel)}
             </button>
           `;
-        } else if (c.action_type === 'OPEN_WRITEBACK' && c.action_payload) {
-          const p = c.action_payload;
+        } else if (aType === 'field_audit' || aType === 'open_writeback') {
+          const btnLabel = c.action_label || '✍️ Save Inspection Result';
           btnHtml = `
-            <button onclick="openWritebackDrawer(${p.shelter_id}, '${escapeJs(p.shelter_name)}', '${escapeJs(p.fema_status)}')"
+            <button onclick="openWritebackDrawer(${p.shelter_id || 0}, '${escapeJs(p.shelter_name || '')}', '${escapeJs(p.fema_status || p.prev_status || 'UNRECORDED')}')"
               class="px-3.5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-xs transition shrink-0 shadow">
-              ✍️ Save Inspection Result
+              ${escapeHtml(btnLabel)}
             </button>
           `;
         }
@@ -1618,12 +1706,12 @@
             <div class="space-y-1">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${uClass}">
-                  Step ${idx + 1} · ${escapeHtml(c.urgency)}
+                  ${escapeHtml(badgeLabel)}
                 </span>
                 <span class="text-xs font-semibold text-cyan-300">${escapeHtml(humanizeText(c.metric_highlight || ''))}</span>
               </div>
               <h4 class="text-sm font-bold text-white">${escapeHtml(humanizeText(c.title))}</h4>
-              <p class="text-xs text-slate-300 leading-relaxed">${escapeHtml(humanizeText(c.why_it_matters))}</p>
+              <p class="text-xs text-slate-300 leading-relaxed">${escapeHtml(humanizeText(detailText))}</p>
             </div>
             <div class="shrink-0">${btnHtml}</div>
           </div>
@@ -1747,20 +1835,28 @@
         `;
       }).join('') || '<tr><td colspan="6" class="py-4 px-3 text-slate-400">No bus pickup gaps found for this county.</td></tr>';
 
-      // 4. Medical / Nursing Home Table
-      const emp = mAudit.county_empower_summary || {};
+      // 4. Medical / Nursing Home Table (supporting both empower_county_level_metrics and county_empower_summary)
+      const emp = mAudit.empower_county_level_metrics || mAudit.county_empower_summary || {};
+      const empCounty = emp.county_name ? `${emp.county_name} County, FL` : (emp.county || activeCountyName);
+      const dmeCount = emp.power_dependent_raw_value ?? emp.power_dependent_dme_residents ?? 0;
+      const o2Count = emp.oxygen_services_dme ?? emp.oxygen_dependent_residents ?? 0;
+      const dialCount = emp.dialysis_esrd_dme ?? emp.dialysis_dependent_residents ?? 0;
+      const hhCount = emp.home_health_services_dme ?? emp.home_health_residents ?? 0;
+
       document.getElementById('empowerBanner').innerHTML = `
-        <strong>⚡ At-Home Medical Power Needs (${escapeHtml(emp.county || activeCountyName)}):</strong>
-        <strong>${Number(emp.power_dependent_dme_residents || 0).toLocaleString()}</strong> residents rely on plug-in medical equipment at home ·
-        <strong>${Number(emp.oxygen_dependent_residents || 0).toLocaleString()}</strong> use electric oxygen ·
-        <strong>${Number(emp.dialysis_dependent_residents || 0).toLocaleString()}</strong> require kidney dialysis ·
-        <strong>${Number(emp.home_health_residents || 0).toLocaleString()}</strong> receive home health care.
+        <strong>⚡ At-Home Medical Power Needs (${escapeHtml(empCounty)}):</strong>
+        <strong>${Number(dmeCount).toLocaleString()}</strong> residents rely on plug-in medical equipment at home ·
+        <strong>${Number(o2Count).toLocaleString()}</strong> use electric oxygen ·
+        <strong>${Number(dialCount).toLocaleString()}</strong> require kidney dialysis ·
+        <strong>${Number(hhCount).toLocaleString()}</strong> receive home health care.
       `;
 
       const nhBody = document.getElementById('nursingHomeTableBody');
       nhBody.innerHTML = (mAudit.top_nursing_homes || []).map(nh => {
         const surr = nh.surrounding_10km_shelters || {};
         const nearGen = nh.nearest_generator_confirmed_shelter || {};
+        const unrecGen = surr.generator_unrecorded ?? surr.generator_unrecorded_within_10km ?? 0;
+        const yesGen = surr.generator_confirmed_yes ?? surr.generator_confirmed_yes_within_10km ?? 0;
         return `
           <tr class="hover:bg-slate-900/60">
             <td class="py-2.5 px-3 font-semibold text-white">
@@ -1769,8 +1865,8 @@
             </td>
             <td class="py-2.5 px-3 text-rose-300 font-bold">${nh.certified_beds} beds</td>
             <td class="py-2.5 px-3">
-              <span class="text-amber-300 font-semibold">${surr.generator_unrecorded_within_10km || 0} missing generator paperwork</span>
-              <span class="text-slate-400"> / ${surr.generator_confirmed_yes_within_10km || 0} confirmed</span>
+              <span class="text-amber-300 font-semibold">${unrecGen} missing generator paperwork</span>
+              <span class="text-slate-400"> / ${yesGen} confirmed</span>
             </td>
             <td class="py-2.5 px-3 text-emerald-300">
               ${escapeHtml(nearGen.shelter_name || 'N/A')} <span class="text-slate-400">(${nearGen.straight_line_distance_km || '?'} km)</span>

@@ -19,6 +19,7 @@ import math
 import re
 import uuid
 import wave
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 from google import genai
@@ -240,11 +241,12 @@ def list_available_counties() -> List[Dict[str, Any]]:
       ) AS total_capacity
     FROM {t_shelters}
     WHERE county_fips IS NOT NULL
+      AND state = 'FL'
       AND latitude IS NOT NULL
       AND longitude IS NOT NULL
     GROUP BY county_fips, county_name, state
     ORDER BY
-      CASE WHEN state = 'FL' THEN 0 ELSE 1 END,
+      CASE WHEN county_fips = '12071' THEN 0 ELSE 1 END,
       county_name ASC
     """
 
@@ -257,6 +259,7 @@ def list_available_counties() -> List[Dict[str, Any]]:
     FROM {t_shelters}
     WHERE city IS NOT NULL
       AND county_fips IS NOT NULL
+      AND state = 'FL'
     GROUP BY LOWER(TRIM(city))
     """
 
@@ -311,18 +314,8 @@ def list_available_counties() -> List[Dict[str, Any]]:
         _counties_cache = counties_list if counties_list else list(_FALLBACK_COUNTIES)
 
         city_map: Dict[str, Dict[str, Any]] = {}
-        try:
-            c_rows = list(bq.query(city_sql).result())
-            for cr in c_rows:
-                cl = str(cr.city_lower or "").strip()
-                cfips = str(cr.county_fips or "").strip()
-                if cl and cfips and cfips in by_fips:
-                    city_map[cl] = by_fips[cfips]
-        except Exception:
-            pass
-
         for known_city, known_fips in _KNOWN_CITY_TO_FIPS.items():
-            if known_fips in by_fips and known_city not in city_map:
+            if known_fips in by_fips:
                 city_map[known_city] = by_fips[known_fips]
 
         _city_to_county_cache = city_map
@@ -2340,10 +2333,15 @@ def build_persona_action_response(
     p_info["intent_label"] = f"{county_label} — {p_info['intent_label']}"
     q_lower = (question or "").lower()
 
-    shelter_audit = audit_county_shelters(county_fips=active_fips, top_n=12)
-    transit_gaps = find_zero_car_transit_gaps(county_fips=active_fips, top_n=5)
-    medical_gaps = check_medical_power_gaps(county_fips=active_fips, top_n=8)
-    equity_audit = run_equity_audit(county_fips=active_fips)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        f_sh = pool.submit(audit_county_shelters, active_fips, 12)
+        f_tr = pool.submit(find_zero_car_transit_gaps, active_fips, 5)
+        f_md = pool.submit(check_medical_power_gaps, active_fips, 8)
+        f_eq = pool.submit(run_equity_audit, active_fips)
+        shelter_audit = f_sh.result()
+        transit_gaps = f_tr.result()
+        medical_gaps = f_md.result()
+        equity_audit = f_eq.result()
 
     ep = shelter_audit.get("epistemic_summary", {})
     wc_info = ep.get("wheelchair_accessible", {})
