@@ -42,8 +42,12 @@ from evacuation_agent.tools import (
     check_medical_power_gaps,
     classify_persona_and_intent,
     find_zero_car_transit_gaps,
+    generate_paraphrased_voice_script,
+    list_available_counties,
     record_field_assessment,
+    resolve_county_from_query,
     run_equity_audit,
+    synthesize_natural_speech_wav,
     transcribe_voice_audio,
     verify_place_with_maps_grounding,
 )
@@ -116,9 +120,27 @@ class VoiceTranscribeRequest(BaseModel):
     mime_type: str = Field(default="audio/webm", description="MIME type of recorded audio")
 
 
+class VoiceTTSRequest(BaseModel):
+    text: str = Field(..., description="Text script to synthesize into natural spoken audio")
+    voice_name: str = Field(
+        default="Kore",
+        description="Gemini TTS prebuilt voice name (e.g., Kore, Aoede, Puck)",
+    )
+
+
 class PersonaActionRequest(BaseModel):
     question: str
     county_fips: str = DEFAULT_COUNTY_FIPS
+
+
+def _build_persona_with_paraphrased_voice(
+    question: str,
+    county_fips: str,
+) -> Dict[str, Any]:
+    """Build dynamic county-aware persona response and enrich voice_summary with LLM-paraphrased script."""
+    res = build_persona_action_response(question, county_fips)
+    res["voice_summary"] = generate_paraphrased_voice_script(question, res)
+    return res
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -144,6 +166,14 @@ async def health_check() -> Dict[str, Any]:
             for t in root_agent.tools
         ],
     }
+
+
+@app.get("/api/counties")
+async def api_list_counties() -> Dict[str, Any]:
+    """Return available counties in BigQuery with shelter & SVI tract counts."""
+    loop = asyncio.get_running_loop()
+    counties = await loop.run_in_executor(None, list_available_counties)
+    return {"status": "ok", "counties": counties}
 
 
 @app.get("/api/brief/{county_fips}")
@@ -303,13 +333,25 @@ async def api_voice_transcribe(req: VoiceTranscribeRequest) -> Dict[str, Any]:
     }
 
 
+@app.post("/api/voice-tts")
+async def api_voice_tts(req: VoiceTTSRequest) -> Dict[str, Any]:
+    """Synthesize natural human-like spoken WAV audio using Vertex AI Gemini 2.5 Flash TTS."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None,
+        synthesize_natural_speech_wav,
+        req.text,
+        req.voice_name,
+    )
+
+
 @app.post("/api/persona-action")
 async def api_persona_action(req: PersonaActionRequest) -> Dict[str, Any]:
     """Fast persona identification and dynamic actionable UI deck builder."""
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(
         None,
-        build_persona_action_response,
+        _build_persona_with_paraphrased_voice,
         req.question,
         req.county_fips,
     )
@@ -320,11 +362,21 @@ async def api_persona_action(req: PersonaActionRequest) -> Dict[str, Any]:
 async def api_chat(req: ChatRequest) -> Dict[str, Any]:
     """Execute a conversational turn through the ADK Runner (`root_agent`) + parallel Persona Action builder."""
     loop = asyncio.get_running_loop()
-    persona_future = loop.run_in_executor(
+    resolved = await loop.run_in_executor(
         None,
-        build_persona_action_response,
+        resolve_county_from_query,
         req.message,
         req.county_fips,
+    )
+    active_fips = resolved.get("county_fips", req.county_fips)
+    county_name = resolved.get("county_name", "Lee")
+    state = resolved.get("state", "FL")
+
+    persona_future = loop.run_in_executor(
+        None,
+        _build_persona_with_paraphrased_voice,
+        req.message,
+        active_fips,
     )
 
     session_id = req.session_id or f"sess-{uuid.uuid4().hex[:10]}"
@@ -340,9 +392,13 @@ async def api_chat(req: ChatRequest) -> Dict[str, Any]:
             session_id=session_id,
         )
 
+    augmented_message = (
+        f"[Active County Context: {county_name} County, {state} (county_fips='{active_fips}')] "
+        f"{req.message}"
+    )
     user_content = types.Content(
         role="user",
-        parts=[types.Part.from_text(text=req.message)],
+        parts=[types.Part.from_text(text=augmented_message)],
     )
 
     response_texts: List[str] = []
