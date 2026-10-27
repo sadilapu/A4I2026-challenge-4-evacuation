@@ -240,7 +240,10 @@ if STATIC_DIR.exists():
 def index() -> Any:
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(str(index_file))
+        return FileResponse(
+            str(index_file),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+        )
     return HTMLResponse("<h1>Florida Evacuation Readiness Agent API is running.</h1>")
 
 
@@ -248,7 +251,10 @@ def index() -> Any:
 def executive_report() -> Any:
     report_file = STATIC_DIR / "tableau_report.html"
     if report_file.exists():
-        return FileResponse(str(report_file))
+        return FileResponse(
+            str(report_file),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+        )
     return HTMLResponse("<h1>Executive Report not found.</h1>")
 
 
