@@ -30,3 +30,16 @@ share-alike or non-commercial source becomes somebody else's legal problem.
 
 Put small reference files here and commit them. Anything large, or anything pulled live, belongs in
 BigQuery rather than in git.
+
+
+---
+
+## Implemented Data Lane Deliverables (`FL` in `qwiklabs-gcp-03-bb316766e33b.evacuation_readiness`)
+
+1. **[`readiness_queries.sql`](./readiness_queries.sql)**:
+   - **`shelter_hazard_exposure` (View, 2,793 rows):** Enriches every Florida shelter with explicit 3-state accessibility (`YES` / `NO` / `UNRECORDED`) and generator (`YES` / `NO` / `UNRECORDED`) status, storm-surge (`in_surge_slosh_area`) and 100-year floodplain (`in_100_yr_floodplain`) flags, county Medicare power-dependent DME counts (`power_dependent_dme`), and nearest tract hurricane/coastal-flood Expected Annual Loss (`HRCN_EALT`, `CFLD_EALT`).
+   - **`tract_shelter_reachability` (View, 5,160 rows):** Computes geodesic straight-line distances (`ST_DISTANCE`) from every census tract centroid to the nearest shelter of any kind, nearest confirmed wheelchair-accessible shelter (`wheelchair_accessible IS TRUE`), nearest medical-needs shelter (`is_medical IS TRUE`), and nearest surge-free generator shelter; counts shelters within `5 km` and `10 km` broken out by `YES`, `NO`, and `UNRECORDED`; classifies tracts into four 10 km reachability tiers; and computes `evacuation_priority_score` strictly from physical/structural barriers (excluding SVI Theme 3 / race & ethnicity).
+   - **`care_facility_evacuation_risk` (View, 694 rows):** Maps every CMS-certified nursing home in Florida (`84,537` beds) to its nearest general, medical-needs, and surge-free accessible shelter with backup power.
+   - **`shelter_assessments` (Table):** Operational write-back table storing verified accessibility assessments and exempt `Google Maps` `place_id` / `review_id` pointers (never caching raw Google Maps content).
+2. **[`equity_audit.py`](./equity_audit.py) & [`READINESS_AND_AUDIT_REPORT.md`](./READINESS_AND_AUDIT_REPORT.md)**:
+   - Loads CDC SVI Theme 3 (`RPL_THEME3`, `EP_MINRTY`) into a separate post-hoc audit table (`evacuation_readiness.equity_audit_svi_theme3`) and audits how structural prioritization and County `UNRECORDED` accessibility paperwork blindspots intersect with minority, low-income, and limited-English communities across all 67 Florida counties.

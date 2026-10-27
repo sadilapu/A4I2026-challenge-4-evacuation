@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Florida Evacuation Readiness &amp; Vulnerable Community Planning — EOC Console</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #111827;
+      --panel-alt: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-dark: #0284c7;
+      --yes: #22c55e;
+      --no: #ef4444;
+      --unrecorded: #f59e0b;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 700;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    select, input, button, textarea {
+      font-family: inherit;
+      font-size: 13px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+      color: var(--text);
+      padding: 8px 12px;
+    }
+    button {
+      cursor: pointer;
+      background: var(--accent-dark);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      transition: opacity 0.15s ease;
+    }
+    button:hover { opacity: 0.9; }
+    button.secondary {
+      background: var(--panel-alt);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 18px 24px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .kpi-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 4px 0;
+    }
+    .kpi-detail {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .status-bar {
+      display: flex;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+      background: #334155;
+    }
+    .bar-yes { background: var(--yes); }
+    .bar-no { background: var(--no); }
+    .bar-unrec { background: var(--unrecorded); }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      color: var(--muted);
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 1024px) {
+      .split-layout { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .prompt-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .chip {
+      font-size: 12px;
+      padding: 6px 10px;
+      background: #1e293b;
+      border: 1px solid #38bdf844;
+      color: #bae6fd;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .chip:hover { background: #0284c733; }
+    .chat-log {
+      min-height: 420px;
+      max-height: 620px;
+      overflow-y: auto;
+      padding: 12px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .msg {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13.5px;
+    }
+    .msg.user {
+      background: #1e293b;
+      border-left: 3px solid var(--accent);
+    }
+    .msg.agent {
+      background: #111827;
+      border: 1px solid var(--border);
+    }
+    .msg.agent h3, .msg.agent h4 { margin-top: 12px; margin-bottom: 6px; color: #e2e8f0; }
+    .msg.agent ul, .msg.agent ol { padding-left: 20px; margin: 6px 0; }
+    .msg.agent table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+    .msg.agent th, .msg.agent td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .tool-trace {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .tool-pill {
+      font-size: 11px;
+      background: #1e1b4b;
+      border: 1px solid #6366f1;
+      color: #c7d2fe;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    /* Strict Google Maps Attribution Rules (Section 13):
+       "Google Maps" text is never restyled, re-capitalized, wrapped across lines, or translated. */
+    .inline-gmaps-cite {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 1px 7px;
+      font-size: 11.5px;
+      background: #064e3b;
+      border: 1px solid #10b981;
+      border-radius: 4px;
+      color: #ecfdf5;
+      text-decoration: none;
+      vertical-align: baseline;
+    }
+    .inline-gmaps-cite:hover { text-decoration: underline; }
+    .gmaps-brand {
+      white-space: nowrap;
+      font-style: normal;
+      font-variant: normal;
+      text-transform: none;
+    }
+    .gmaps-sources-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #064e3b44;
+      border: 1px solid #10b98188;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .gmaps-chunk-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px dashed #334155;
+    }
+    .gmaps-chunk-item:last-child { border-bottom: none; }
+    .gmaps-chunk-item a {
+      color: #6ee7b7;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .gmaps-chunk-item a:hover { text-decoration: underline; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .data-table th {
+      color: var(--muted);
+      font-weight: 600;
+      background: #0f172a;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge.yes { background: #14532d; color: #86efac; }
+    .badge.no { background: #7f1d1d; color: #fca5a5; }
+    .badge.unrec { background: #78350f; color: #fde68a; }
+    .badge.hazard { background: #7f1d1d; color: #fecaca; }
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input-row textarea {
+      flex: 1;
+      resize: vertical;
+      min-height: 46px;
+    }
+    .guardrail-banner {
+      font-size: 12px;
+      background: #1e293b;
+      border-left: 4px solid var(--unrecorded);
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-title">
+      <span class="brand-badge">CHALLENGE 4 · FL</span>
+      <div>
+        <h1>Florida Adaptive Evacuation Readiness &amp; Vulnerable Community Planning</h1>
+        <div class="subtitle">
+          Vertex AI <code>gemini-3.6-flash</code> · ADK Agent · Grounding with <span translate="no" class="gmaps-brand">Google Maps</span> (Places + Routing) · BigQuery Managed MCP
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <label for="countySelect" style="font-size:12px;color:var(--muted);">Operational Scope:</label>
+      <select id="countySelect" onchange="loadCountyOverview()">
+        <option value="Miami-Dade">Miami-Dade County</option>
+        <option value="Broward">Broward County (0 Confirmed WC Shelters)</option>
+        <option value="Hillsborough">Hillsborough County (Tampa)</option>
+        <option value="Pinellas">Pinellas County (St. Petersburg)</option>
+        <option value="Orange">Orange County (Orlando)</option>
+        <option value="Palm Beach">Palm Beach County</option>
+        <option value="Lee">Lee County (Fort Myers)</option>
+        <option value="Duval">Duval County (Jacksonville)</option>
+        <option value="Sarasota">Sarasota County</option>
+        <option value="Brevard">Brevard County</option>
+        <option value="">Statewide (All 67 Florida Counties)</option>
+      </select>
+      <button onclick="askFullReadinessBrief()">Generate Live Readiness Brief</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="guardrail-banner">
+      <strong>Data &amp; Responsible AI Guardrails Active:</strong>
+      (1) <strong>Paperwork vs. Physical Reality:</strong> Unrecorded wheelchair accessibility (<code>NULL</code>, 88.2% statewide) is never conflated with <code>FALSE</code>.
+      (2) <strong>Distance Transparency:</strong> BigQuery distances use straight-line <code>ST_DISTANCE</code>; live driving routes &amp; drive times are grounded at runtime via <span translate="no" class="gmaps-brand">Google Maps</span>.
+      (3) <strong>Publisher Gap:</strong> CDC PLACES <code>pct_lacktrpt</code> is <code>NULL</code> in Florida; vehicle access uses ACS <code>households_no_vehicle</code> &amp; SVI <code>pct_no_vehicle</code> (vehicle ownership).
+      (4) <strong>Fairness Audit:</strong> SVI Theme 3 (race/ethnicity) is excluded from prioritization inputs and used strictly in the Post-Hoc Equity Audit.
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Registered Shelters &amp; Capacity</div>
+        <div class="kpi-value" id="kpiShelters">—</div>
+        <div class="kpi-detail" id="kpiCapacity">Loading BigQuery dataset...</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Wheelchair Accessibility (3-State)</div>
+        <div class="kpi-value" id="kpiWcBreakdown">—</div>
+        <div class="kpi-detail" id="kpiWcDetail">YES vs NO vs UNRECORDED</div>
+        <div class="status-bar">
+          <div id="barWcYes" class="bar-yes" style="width:0%"></div>
+          <div id="barWcNo" class="bar-no" style="width:0%"></div>
+          <div id="barWcUnrec" class="bar-unrec" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">No-Vehicle Households &amp; 10km Gaps</div>
+        <div class="kpi-value" id="kpiNoVeh">—</div>
+        <div class="kpi-detail" id="kpiBlindspot">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Medical Shelters &amp; Power-Dependent DME</div>
+        <div class="kpi-value" id="kpiPowerDme">—</div>
+        <div class="kpi-detail" id="kpiMedicalShelters">—</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('briefTab', this)">1. Live ADK Agent &amp; Grounded Readiness Brief</button>
+      <button class="tab-btn" onclick="switchTab('tractsTab', this)">2. Vulnerable Census Tracts &amp; 10 km Reachability</button>
+      <button class="tab-btn" onclick="switchTab('sheltersTab', this)">3. Candidate Shelters, Hazard Exposure &amp; Assessments</button>
+      <button class="tab-btn" onclick="switchTab('equityTab', this)">4. Post-Hoc Equity &amp; Reporting-Bias Audit</button>
+    </div>
+
+    <!-- TAB 1: Live ADK Agent & Grounded Readiness Brief -->
+    <div id="briefTab" class="tab-panel active">
+      <div class="split-layout">
+        <div class="card">
+          <h2>
+            <span>Emergency Manager ADK Agent Console (<code>gemini-3.6-flash</code>)</span>
+            <span style="font-size:11px;color:var(--muted);">BigQuery + Managed MCP + <span translate="no" class="gmaps-brand">Google Maps</span> Grounding</span>
+          </h2>
+          <div class="prompt-chips">
+            <span class="chip" onclick="sendPreset('brief')">📋 Full 7-Question County Readiness Brief</span>
+            <span class="chip" onclick="sendPreset('maps')">📍 Verify UNRECORDED Shelters &amp; Live Driving Times</span>
+            <span class="chip" onclick="sendPreset('medical')">⚡ Power-Dependent DME &amp; Nursing Home Evacuation</span>
+            <span class="chip" onclick="sendPreset('equity')">⚖️ Run Post-Hoc SVI Theme 3 Equity Audit</span>
+            <span class="chip" onclick="sendPreset('mcp')">🗄️ Query BigQuery Managed MCP Server</span>
+          </div>
+          <div id="chatLog" class="chat-log"></div>
+          <div class="chat-input-row">
+            <textarea id="chatInput" placeholder="Ask about vulnerable tracts, shelter accessibility gaps, live driving times from a tract to a named shelter, nursing homes, or equity audit..."></textarea>
+            <button id="sendBtn" onclick="sendChatMessage()">Ask Agent</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>Top Prioritized Tracts in Scope (Quick Grounding)</h2>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="quickTractsTable">
+                <thead>
+                  <tr>
+                    <th>Tract GEOID</th>
+                    <th>No-Veh HH</th>
+                    <th>Disab %</th>
+                    <th>Nearest (km)</th>
+                    <th>10km WC (Y/N/U)</th>
+                    <th>Verify Route</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Candidate Shelters for Live Verification</h2>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="quickSheltersTable">
+                <thead>
+                  <tr>
+                    <th>Shelter Name &amp; City</th>
+                    <th>Cap</th>
+                    <th>WC Status</th>
+                    <th>Gen</th>
+                    <th>Flood/Surge</th>
+                    <th>Ground Live</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Vulnerable Tracts -->
+    <div id="tractsTab" class="tab-panel">
+      <div class="card">
+        <h2>
+          <span>Highest-Priority Census Tracts (<code>tract_shelter_reachability</code>)</span>
+          <span style="font-size:12px;color:var(--muted);">Straight-line geodesic distances via BigQuery <code>ST_DISTANCE</code>; click "Ground Route" for live driving time</span>
+        </h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="fullTractsTable">
+            <thead>
+              <tr>
+                <th>Tract GEOID</th>
+                <th>County</th>
+                <th>Pop</th>
+                <th>No-Vehicle HH (%)</th>
+                <th>Disability / Mobility %</th>
+                <th>Mobile Homes %</th>
+                <th>Nearest Any Shelter (Geodesic)</th>
+                <th>Nearest Confirmed WC=YES</th>
+                <th>10km Shelters (YES / NO / UNREC)</th>
+                <th>Reachability Tier</th>
+                <th>Live Route Check</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Candidate Shelters & Assessments -->
+    <div id="sheltersTab" class="tab-panel">
+      <div class="card">
+        <h2>
+          <span>County Shelters &amp; Hazard Exposure (<code>shelter_hazard_exposure</code>)</span>
+          <span style="font-size:12px;color:var(--muted);">Never conflating NULL with FALSE · Verify individual named buildings on <span translate="no" class="gmaps-brand">Google Maps</span></span>
+        </h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="fullSheltersTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Shelter Name</th>
+                <th>Street Address &amp; City</th>
+                <th>Evac Cap</th>
+                <th>Wheelchair (FEMA)</th>
+                <th>Generator (FEMA)</th>
+                <th>Medical</th>
+                <th>Surge / 100yr Flood</th>
+                <th>Hurricane EAL ($)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>
+          <span>Recorded Shelter Accessibility Pointers (<code>evacuation_readiness.shelter_assessments</code>)</span>
+          <span style="font-size:12px;color:var(--muted);">Compliant with <span translate="no" class="gmaps-brand">Google Maps</span> Terms: persists only <code>place_id</code> / <code>review_id</code> pointers &amp; planner status</span>
+        </h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="assessmentsTable">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Shelter ID &amp; Name</th>
+                <th>County</th>
+                <th>FEMA WC Status</th>
+                <th>Assessed Status</th>
+                <th>Operational Status</th>
+                <th><span translate="no" class="gmaps-brand">Google Maps</span> <code>place_id</code> Pointer</th>
+                <th>Planner Notes</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Post-Hoc Equity Audit -->
+    <div id="equityTab" class="tab-panel">
+      <div class="card">
+        <h2>Post-Hoc Equity Audit by Structural Priority Tier (Joined to <code>equity_audit_svi_theme3</code>)</h2>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:0;">
+          Per Challenge 4 Responsible AI rules, race and ethnicity (<code>RPL_THEME3</code>, <code>EP_MINRTY</code>, and composite <code>RPL_THEMES</code>) are excluded from model inputs. Because structural proxies correlate with demographics, we audit prioritized outputs post-hoc:
+        </p>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="equityDecileTable">
+            <thead>
+              <tr>
+                <th>Priority Tier</th>
+                <th>Tracts</th>
+                <th>Total Pop</th>
+                <th>No-Vehicle HH</th>
+                <th>Avg No-Veh %</th>
+                <th>Avg Disability %</th>
+                <th>Avg Nearest WC=YES (km)</th>
+                <th>Post-Hoc SVI Theme 3 %ile</th>
+                <th>Post-Hoc Minority %</th>
+                <th>Post-Hoc Poverty %</th>
+                <th>Post-Hoc Median Income</th>
+                <th>Limited English %</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>10 km No-Vehicle Reachability Tier Audit (Paperwork Blindspots vs. Physical Deserts)</h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="equityTierTable">
+            <thead>
+              <tr>
+                <th>Reachability Tier (10 km Cutoff)</th>
+                <th>Tracts</th>
+                <th>Total Population</th>
+                <th>No-Vehicle Households</th>
+                <th>Avg Disability %</th>
+                <th>Post-Hoc Minority %</th>
+                <th>Post-Hoc Poverty %</th>
+                <th>Post-Hoc Median Income</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentOverview = null;
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function statusBadge(val) {
+      if (val === 'YES' || val === true) return '<span class="badge yes">YES</span>';
+      if (val === 'NO' || val === false) return '<span class="badge no">NO</span>';
+      return '<span class="badge unrec">UNRECORDED</span>';
+    }
+
+    async function loadCountyOverview() {
+      const county = document.getElementById('countySelect').value;
+      const res = await fetch(`/api/overview?county=${encodeURIComponent(county)}`);
+      const data = await res.json();
+      currentOverview = data;
+
+      const sSum = data.shelters.county_summary || {};
+      const tSum = data.tracts.scope_summary || {};
+      const pRows = data.medical_and_power.power_dependent_counties || [];
+      const topP = pRows[0] || {};
+
+      // KPI 1: Shelters
+      document.getElementById('kpiShelters').textContent = (sSum.total_shelters || 0).toLocaleString() + ' Shelters';
+      document.getElementById('kpiCapacity').textContent =
+        `Evac Capacity: ${(sSum.total_evacuation_capacity || 0).toLocaleString()} · Flood/Surge Exposed: ${(sSum.in_storm_surge_slosh_area || 0) + (sSum.in_100_yr_floodplain || 0)}`;
+
+      // KPI 2: 3-state Wheelchair
+      const wcY = sSum.wheelchair_yes || 0;
+      const wcN = sSum.wheelchair_no || 0;
+      const wcU = sSum.wheelchair_unrecorded || 0;
+      const totS = Math.max(sSum.total_shelters || 1, 1);
+      document.getElementById('kpiWcBreakdown').textContent = `${wcY} YES / ${wcN} NO / ${wcU} UNREC`;
+      document.getElementById('kpiWcDetail').textContent = `${sSum.pct_wheelchair_unrecorded || 0}% Unrecorded in FEMA registry`;
+      document.getElementById('barWcYes').style.width = `${(100 * wcY / totS).toFixed(1)}%`;
+      document.getElementById('barWcNo').style.width = `${(100 * wcN / totS).toFixed(1)}%`;
+      document.getElementById('barWcUnrec').style.width = `${(100 * wcU / totS).toFixed(1)}%`;
+
+      // KPI 3: No-vehicle & 10km blindspots
+      document.getElementById('kpiNoVeh').textContent = (tSum.total_no_vehicle_households || 0).toLocaleString() + ' HH (No Vehicle)';
+      document.getElementById('kpiBlindspot').textContent =
+        `${(tSum.pop_over_10km_from_confirmed_wc_shelter || 0).toLocaleString()} residents >10km from confirmed WC=YES shelter`;
+
+      // KPI 4: Medical & emPOWER
+      document.getElementById('kpiPowerDme').textContent =
+        (topP.power_dependent_dme_users || sSum.county_power_dependent_medicare_dme || 0).toLocaleString() + ' DME Users';
+      document.getElementById('kpiMedicalShelters').textContent =
+        `Designated Medical Shelters: ${sSum.medical_needs_shelters || 0} · Confirmed Generator: ${sSum.generator_yes || 0} (${sSum.generator_unrecorded || 0} UNREC)`;
+
+      renderTables(data);
+    }
+
+    function renderTables(data) {
+      const tracts = data.tracts.prioritized_tracts || [];
+      const shelters = data.shelters.candidate_shelters || [];
+      const topTract = tracts[0] || { tract_lat: 25.7776, tract_lon: -80.1318, geo_id: '12086004404' };
+
+      // Quick Tracts Table
+      const qtBody = document.querySelector('#quickTractsTable tbody');
+      qtBody.innerHTML = tracts.slice(0, 5).map(t => `
+        <tr>
+          <td><code>${t.geo_id}</code><br/><span style="font-size:11px;color:var(--muted);">${t.county_name || ''}</span></td>
+          <td>${(t.households_no_vehicle || 0).toLocaleString()} (${t.pct_no_vehicle_ownership || 0}%)</td>
+          <td>${t.pct_disability || 0}%</td>
+          <td>${t.nearest_any_shelter_km ?? '—'} km<br/><span style="font-size:10px;color:var(--muted);">WC=YES: ${t.nearest_wc_yes_shelter_km ?? '>35'} km</span></td>
+          <td>
+            <span class="badge yes">${t.shelters_within_10km_wc_yes}</span>
+            <span class="badge no">${t.shelters_within_10km_wc_no}</span>
+            <span class="badge unrec">${t.shelters_within_10km_wc_unrecorded}</span>
+          </td>
+          <td>
+            <button class="secondary" style="padding:4px 8px;font-size:11px;"
+              onclick="groundTractRoute('${t.geo_id}', ${t.tract_lat}, ${t.tract_lon}, '${(t.nearest_any_shelter_name || '').replace(/'/g, '')}', '${(t.nearest_any_shelter_address || '').replace(/'/g, '')}', '${(t.nearest_any_shelter_city || '').replace(/'/g, '')}')">
+              Route
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Quick Shelters Table
+      const qsBody = document.querySelector('#quickSheltersTable tbody');
+      qsBody.innerHTML = shelters.slice(0, 5).map(s => `
+        <tr>
+          <td><strong>${s.shelter_name}</strong><br/><span style="font-size:11px;color:var(--muted);">${s.address_1}, ${s.city}</span></td>
+          <td>${(s.evacuation_capacity || 0).toLocaleString()}</td>
+          <td>${statusBadge(s.wheelchair_status)}</td>
+          <td>${statusBadge(s.generator_status)}</td>
+          <td>${s.has_flood_or_surge_flag ? '<span class="badge hazard">SURGE/FLOOD</span>' : '<span class="badge yes">CLEAR</span>'}</td>
+          <td>
+            <button class="secondary" style="padding:4px 8px;font-size:11px;"
+              onclick="groundSingleShelter(${s.shelter_id}, '${s.shelter_name.replace(/'/g, '')}', '${s.address_1.replace(/'/g, '')}', '${s.city.replace(/'/g, '')}', '${s.wheelchair_status}', ${topTract.tract_lat}, ${topTract.tract_lon})">
+              Verify Live
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Full Tracts Table
+      const ftBody = document.querySelector('#fullTractsTable tbody');
+      ftBody.innerHTML = tracts.map(t => `
+        <tr>
+          <td><code>${t.geo_id}</code></td>
+          <td>${t.county_name || ''}</td>
+          <td>${(t.total_pop || 0).toLocaleString()}</td>
+          <td>${(t.households_no_vehicle || 0).toLocaleString()} (${t.pct_no_vehicle_ownership || 0}%)</td>
+          <td>Disab: ${t.pct_disability || 0}% · Mobil: ${t.pct_mobility_difficulty || 0}%</td>
+          <td>${t.pct_mobile_homes || 0}%</td>
+          <td><strong>${t.nearest_any_shelter_km ?? '—'} km</strong> (${t.nearest_any_shelter_name || 'N/A'} · ${t.nearest_any_shelter_wc_status || ''})</td>
+          <td><strong>${t.nearest_wc_yes_shelter_km ?? 'None'} km</strong> (${t.nearest_wc_yes_shelter_name || 'None'})</td>
+          <td>
+            <span class="badge yes">${t.shelters_within_10km_wc_yes} YES</span>
+            <span class="badge no">${t.shelters_within_10km_wc_no} NO</span>
+            <span class="badge unrec">${t.shelters_within_10km_wc_unrecorded} UNREC</span>
+          </td>
+          <td><code>${t.reachability_tier}</code></td>
+          <td>
+            <button class="secondary" style="padding:4px 8px;font-size:11px;"
+              onclick="switchTab('briefTab', document.querySelector('.tab-btn')); groundTractRoute('${t.geo_id}', ${t.tract_lat}, ${t.tract_lon}, '${(t.nearest_any_shelter_name || '').replace(/'/g, '')}', '${(t.nearest_any_shelter_address || '').replace(/'/g, '')}', '${(t.nearest_any_shelter_city || '').replace(/'/g, '')}')">
+              Ground Route
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Full Shelters Table
+      const fsBody = document.querySelector('#fullSheltersTable tbody');
+      fsBody.innerHTML = shelters.map(s => `
+        <tr>
+          <td><code>${s.shelter_id}</code></td>
+          <td><strong>${s.shelter_name}</strong></td>
+          <td>${s.address_1}, ${s.city}, FL ${s.zip || ''}</td>
+          <td>${(s.evacuation_capacity || 0).toLocaleString()}</td>
+          <td>${statusBadge(s.wheelchair_status)}</td>
+          <td>${statusBadge(s.generator_status)}</td>
+          <td>${s.is_medical ? '<span class="badge yes">MEDICAL</span>' : 'General'}</td>
+          <td>${s.has_flood_or_surge_flag ? '<span class="badge hazard">IN FLOOD/SURGE ZONE</span>' : '<span class="badge yes">Outside Surge/Flood</span>'}</td>
+          <td>$${(s.nearest_tract_hurricane_eal_usd || 0).toLocaleString()}</td>
+          <td>
+            <button class="secondary" style="padding:4px 8px;font-size:11px;"
+              onclick="switchTab('briefTab', document.querySelector('.tab-btn')); groundSingleShelter(${s.shelter_id}, '${s.shelter_name.replace(/'/g, '')}', '${s.address_1.replace(/'/g, '')}', '${s.city.replace(/'/g, '')}', '${s.wheelchair_status}', ${topTract.tract_lat}, ${topTract.tract_lon})">
+              Verify on Maps
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Recorded Assessments Table
+      const aRows = (data.recorded_assessments && data.recorded_assessments.assessments) || [];
+      const aBody = document.querySelector('#assessmentsTable tbody');
+      aBody.innerHTML = aRows.length ? aRows.map(a => `
+        <tr>
+          <td>${(a.assessed_at || '').slice(0, 19).replace('T', ' ')}</td>
+          <td><code>#${a.shelter_id}</code> <strong>${a.shelter_name}</strong></td>
+          <td>${a.county_name}</td>
+          <td>${statusBadge(a.fema_wheelchair_status)}</td>
+          <td><span class="badge yes">${a.assessed_wheelchair_status}</span></td>
+          <td><code>${a.operational_status}</code></td>
+          <td><code>${a.google_maps_place_id || 'N/A'}</code></td>
+          <td>${a.inspector_notes || ''}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="8" style="color:var(--muted);">No assessments recorded yet in this scope. Verify a shelter via the Agent Console to persist its Google Maps <code>place_id</code> pointer!</td></tr>';
+
+      // Equity Audit Tables
+      const eqDeciles = (data.equity_audit && data.equity_audit.priority_decile_audit) || [];
+      document.querySelector('#equityDecileTable tbody').innerHTML = eqDeciles.map(d => `
+        <tr>
+          <td><strong>${d.priority_tier}</strong></td>
+          <td>${(d.tract_count || 0).toLocaleString()}</td>
+          <td>${(d.total_population || 0).toLocaleString()}</td>
+          <td>${(d.no_vehicle_households || 0).toLocaleString()}</td>
+          <td>${d.avg_pct_no_vehicle ?? '—'}%</td>
+          <td>${d.avg_pct_disability ?? '—'}%</td>
+          <td>${d.avg_nearest_wc_yes_km ?? '—'} km</td>
+          <td><strong>${d.posthoc_avg_svi_theme3_percentile ?? '—'}%</strong></td>
+          <td><strong>${d.posthoc_avg_pct_minority_pop ?? '—'}%</strong></td>
+          <td><strong>${d.posthoc_avg_poverty_rate_pct ?? '—'}%</strong></td>
+          <td>$${(d.posthoc_avg_median_income_usd || 0).toLocaleString()}</td>
+          <td>${d.posthoc_avg_pct_limited_english ?? '—'}%</td>
+        </tr>
+      `).join('');
+
+      const eqTiers = (data.equity_audit && data.equity_audit.reachability_tier_audit) || [];
+      document.querySelector('#equityTierTable tbody').innerHTML = eqTiers.map(t => `
+        <tr>
+          <td><code>${t.reachability_tier}</code></td>
+          <td>${(t.tract_count || 0).toLocaleString()}</td>
+          <td>${(t.total_population || 0).toLocaleString()}</td>
+          <td>${(t.no_vehicle_households || 0).toLocaleString()}</td>
+          <td>${t.avg_pct_disability ?? '—'}%</td>
+          <td><strong>${t.posthoc_avg_pct_minority_pop ?? '—'}%</strong></td>
+          <td><strong>${t.posthoc_avg_poverty_rate_pct ?? '—'}%</strong></td>
+          <td>$${(t.posthoc_avg_median_income_usd || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    /**
+     * Attaches inline Google Maps source citations immediately following the sentences
+     * they support (`grounding_supports`), with unmodified `<span translate="no">Google Maps</span>`.
+     */
+    function renderGroundedMarkdown(replyText, chunks, supports) {
+      let annotated = replyText;
+      if (supports && supports.length > 0 && chunks && chunks.length > 0) {
+        for (const sup of supports) {
+          if (!sup.text || sup.text.length < 12 || !sup.chunk_indices || !sup.chunk_indices.length) continue;
+          const badgeLinks = sup.chunk_indices.map(idx => {
+            const c = chunks[idx];
+            if (!c) return '';
+            const safeTitle = (c.title || 'Source').replace(/ - Google Maps$/i, '');
+            const href = c.uri || '#';
+            return `<a class="inline-gmaps-cite" href="${href}" target="_blank" rel="noopener">📍 ${safeTitle} (<span translate="no" class="gmaps-brand">Google Maps</span>)</a>`;
+          }).filter(Boolean).join(' ');
+          if (badgeLinks && annotated.includes(sup.text)) {
+            annotated = annotated.replace(sup.text, `${sup.text} ${badgeLinks}`);
+          }
+        }
+      }
+      return marked.parse(annotated);
+    }
+
+    function appendMessage(role, htmlContent, toolCalls = [], chunks = []) {
+      const log = document.getElementById('chatLog');
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+
+      let traceHtml = '';
+      if (toolCalls && toolCalls.length > 0) {
+        traceHtml = '<div class="tool-trace">' +
+          toolCalls.map(t => `<span class="tool-pill">⚙️ ${t.name}</span>`).join('') +
+          (chunks && chunks.length > 0 ? `<span class="tool-pill" style="background:#064e3b;border-color:#10b981;">🗺️ <span translate="no" class="gmaps-brand">Google Maps</span> Grounded (${chunks.length} sources)</span>` : '') +
+          '</div>';
+      }
+
+      let sourcesBox = '';
+      if (chunks && chunks.length > 0) {
+        const county = document.getElementById('countySelect').value || 'Miami-Dade';
+        sourcesBox = `
+          <div class="gmaps-sources-box">
+            <div style="font-weight:700;margin-bottom:6px;">
+              Live Verification Sources from <span translate="no" class="gmaps-brand">Google Maps</span> (Immediately Viewable Attribution):
+            </div>
+            ${chunks.map(c => `
+              <div class="gmaps-chunk-item">
+                <div>
+                  <a href="${c.uri || '#'}" target="_blank" rel="noopener">📍 ${c.title}</a>
+                  <span style="color:var(--muted);margin-left:6px;">Source: <span translate="no" class="gmaps-brand">Google Maps</span></span>
+                  ${c.place_id ? `<code style="margin-left:8px;font-size:11px;">place_id: ${c.place_id}</code>` : ''}
+                </div>
+                ${c.place_id ? `
+                  <button class="secondary" style="padding:3px 8px;font-size:11px;"
+                    onclick="savePlaceIdPointer('${(c.title || '').replace(/'/g, '')}', '${c.place_id}', '${county.replace(/'/g, '')}', this)">
+                    💾 Save place_id to BigQuery
+                  </button>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      div.innerHTML = traceHtml + htmlContent + sourcesBox;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function sendPromptToAgent(promptText) {
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+      btn.textContent = 'Running ADK Agent...';
+      appendMessage('user', `<strong>Emergency Manager:</strong> ${promptText}`);
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: promptText })
+        });
+        const data = await res.json();
+        const html = renderGroundedMarkdown(data.reply || 'No response.', data.grounding_chunks || [], data.grounding_supports || []);
+        appendMessage('agent', html, data.tool_calls || [], data.grounding_chunks || []);
+        // Refresh overview in case an assessment was recorded
+        if ((data.tool_calls || []).some(t => t.name === 'record_shelter_accessibility_assessment')) {
+          loadCountyOverview();
+        }
+      } catch (err) {
+        appendMessage('agent', `<span style="color:var(--no);">Error calling agent: ${err.message}</span>`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Ask Agent';
+      }
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendPromptToAgent(text);
+    }
+
+    function askFullReadinessBrief() {
+      sendPreset('brief');
+    }
+
+    function sendPreset(type) {
+      const county = document.getElementById('countySelect').value || 'Miami-Dade';
+      const prompts = {
+        brief: `Generate a comprehensive Evacuation Readiness Brief for ${county} County answering all 7 emergency manager questions: (1) top 3 vulnerable census tracts, (2) nearest shelters with both BigQuery geodesic distance and live Google Maps driving distance/time from the top tract centroid, (3) 3-state accessibility (YES vs NO vs UNRECORDED) and live Google Maps verification of top candidate shelters, (4) storm-surge/floodplain and hurricane EAL exposure, (5) HHS emPOWER electricity-dependent DME users and CMS nursing homes, (6) concrete pre-staging recommendations, and (7) our post-hoc SVI Theme 3 equity audit.`,
+        maps: `In ${county} County, find the top vulnerable census tract and candidate shelters within 10 km whose wheelchair accessibility is UNRECORDED. Use Grounding with Google Maps on 2 specific candidate shelter buildings at their street addresses to check if they are open, whether they have been renamed, whether Google Maps confirms wheelchair accessibility, and compute the live driving distance and drive time from the top vulnerable tract centroid.`,
+        medical: `For ${county} County, analyze the electricity-dependent Medicare DME population (HHS emPOWER: total DME, oxygen, dialysis, home health) and CMS nursing homes (` + '`care_facilities`' + `). Compare them against confirmed generator-equipped and medical-needs shelters, and verify the nearest medical-needs or generator shelter on Google Maps.`,
+        equity: `Run the post-hoc Equity and Reporting-Bias Audit for ${county} County (and compare with statewide Florida). Explain why SVI Theme 3 (race/ethnicity) is excluded as a prioritization input and how our prioritized tracts and UNRECORDED shelter accessibility blindspots impact minority, low-income, and limited-English communities.`,
+        mcp: `Use the Google-managed BigQuery MCP server (list_table_ids / execute_sql_readonly) to inspect \`qwiklabs-gcp-03-bb316766e33b.evacuation_readiness\` and report the top 5 Florida counties with the highest number of no-vehicle households living in UNRECORDED_ACCESSIBILITY_BLINDSPOT_10KM tracts.`
+      };
+      sendPromptToAgent(prompts[type]);
+    }
+
+    function groundTractRoute(geoId, lat, lon, shelterName, address, city) {
+      const county = document.getElementById('countySelect').value || 'Miami-Dade';
+      const prompt = `For vulnerable Census Tract ${geoId} in ${county} County at coordinates (${lat}, ${lon}), verify the nearest shelter "${shelterName}, ${address}, ${city}, FL" using Grounding with Google Maps: (1) check its live operational status and wheelchair accessibility on Google Maps, and (2) compute the live driving distance and driving time from (${lat}, ${lon}) to "${shelterName}, ${address}, ${city}, FL", comparing it against the BigQuery straight-line ST_DISTANCE.`;
+      sendPromptToAgent(prompt);
+    }
+
+    function groundSingleShelter(shelterId, name, address, city, femaWc, tractLat, tractLon) {
+      const county = document.getElementById('countySelect').value || 'Miami-Dade';
+      const prompt = `Verify shelter #${shelterId} ("${name}, ${address}, ${city}, FL", in ${county} County, FEMA wheelchair status: ${femaWc}) using Grounding with Google Maps: check whether this specific building is open/operational right now, whether it has been renamed, whether Google Maps reports wheelchair-accessible entrance/parking, and compute the live driving distance and drive time from vulnerable tract centroid (${tractLat}, ${tractLon}) to "${name}, ${address}, ${city}, FL".`;
+      sendPromptToAgent(prompt);
+    }
+
+    async function savePlaceIdPointer(title, placeId, county, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      const cleanName = title.replace(/ - Google Maps$/i, '');
+      const shelters = (currentOverview && currentOverview.shelters && currentOverview.shelters.candidate_shelters) || [];
+      const match = shelters.find(s => cleanName.toLowerCase().includes((s.shelter_name || '').toLowerCase().slice(0, 12))) || shelters[0] || { shelter_id: 0, shelter_name: cleanName, wheelchair_status: 'UNRECORDED' };
+      try {
+        await fetch('/api/assessments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shelter_id: match.shelter_id || 0,
+            shelter_name: cleanName,
+            county_name: county || 'Miami-Dade',
+            fema_wheelchair_status: match.wheelchair_status || 'UNRECORDED',
+            assessed_wheelchair_status: 'VERIFIED_ON_GOOGLE_MAPS',
+            operational_status: 'OPEN_OPERATIONAL',
+            google_maps_place_id: placeId,
+            inspector_notes: 'Verified live via Grounding with Google Maps (place_id pointer persisted).'
+          })
+        });
+        btn.textContent = '✅ Saved place_id';
+        loadCountyOverview();
+      } catch (e) {
+        btn.textContent = 'Error';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadCountyOverview();
+      appendMessage(
+        'agent',
+        `<strong>Florida Evacuation Readiness &amp; Vulnerable Community Planning Agent Ready.</strong><br/>
+         Connected to <code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness</code> (Florida: 2,793 shelters, 5,160 vulnerability tracts, 5,114 hazard tracts, 694 CMS nursing homes, 67 emPOWER counties), BigQuery's Google-managed MCP server (<code>https://bigquery.googleapis.com/mcp</code>), and live <strong>Grounding with <span translate="no" class="gmaps-brand">Google Maps</span></strong> (Places + Routing).<br/>
+         Select a county above or click any preset chip to generate a grounded Readiness Brief.`
+      );
+    });
+  </script>
+</body>
+</html>

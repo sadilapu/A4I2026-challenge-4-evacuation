@@ -97,3 +97,40 @@ speak to, sixty-four nobody has assessed"* is more useful, more honest, and will
 
 See the README's "Six defects you will meet" for the data traps and Section 13 of the notebook for
 the constraints.
+
+
+---
+
+## Implemented ADK Agent & Emergency Operations Center UI (`agent/`)
+
+### Architecture (`gemini-3.6-flash` on Vertex AI)
+- **[`evacuation_agent/agent.py`](./evacuation_agent/agent.py)**:
+  - **`root_agent` (`evacuation_readiness_agent`):** Built with `google-adk` on `gemini-3.6-flash` (`GOOGLE_GENAI_USE_VERTEXAI=True`, `GOOGLE_CLOUD_LOCATION=global`), combining built-in Grounding with Google Maps, custom Python decision tools, and BigQuery's Google-managed MCP server in a single agent.
+  - **`GoogleMapsWithRoutingTool`:** Subclasses `GoogleMapsGroundingTool` to enable both `places` and `routing` in `types.GoogleMapsGroundingTypes`, allowing the agent to verify specific named shelter buildings at street addresses AND compute real-world driving distance and drive time from vulnerable tract centroids or nursing homes.
+  - **Google-Managed BigQuery MCP Server (`bigquery_managed_mcp`):** Connected to `https://bigquery.googleapis.com/mcp` via `McpToolset` + `StreamableHTTPConnectionParams` with automatic OAuth2 token refresh (`execute_sql_readonly`, `get_dataset_info`, `get_table_info`, `list_dataset_ids`, `list_table_ids`).
+- **[`evacuation_agent/tools.py`](./evacuation_agent/tools.py)**:
+  - `get_vulnerable_tracts`: Ranks census tracts by structural evacuation barriers (`evacuation_priority_score`) and 10 km shelter reachability (`YES` / `NO` / `UNRECORDED`).
+  - `evaluate_county_shelters`: Evaluates county shelter capacity, 3-state accessibility/generator reporting gaps, storm-surge/floodplain flags, and candidate shelter addresses for per-building Google Maps grounding.
+  - `assess_medical_and_power_dependency`: Joins HHS emPOWER electricity-dependent Medicare DME populations and CMS nursing homes (`care_facilities`) against designated medical-needs and generator-equipped shelters.
+  - `run_posthoc_equity_audit`: Audits prioritized tracts and 10 km reachability tiers post-hoc against `evacuation_readiness.equity_audit_svi_theme3` (`RPL_THEME3`, `EP_MINRTY`), poverty rate, median income, and limited-English proficiency.
+  - `record_shelter_accessibility_assessment` & `get_recorded_shelter_assessments`: Persists and retrieves verified shelter assessments and exempt Google Maps `place_id` / `review_id` pointers in `evacuation_readiness.shelter_assessments`.
+- **[`app.py`](./app.py) & [`static/index.html`](./static/index.html)**:
+  - FastAPI server and Emergency Operations Center (EOC) Readiness Brief web application with strict inline `<span translate="no">Google Maps</span>` attribution mapped via `groundingSupports` (`segment.start_index` safely defaulting `None` to `0`) and `groundingChunks[].maps`.
+
+### Running Locally or Deploying to Cloud Run
+```bash
+# Run with ADK Web UI
+cd agent
+adk web
+
+# Run the Emergency Operations Center Readiness Brief Web App
+cd agent
+uvicorn app:app --host 0.0.0.0 --port 8080
+
+# Deploy to Google Cloud Run
+gcloud run deploy fl-evacuation-readiness \
+  --source ./agent \
+  --region us-central1 \
+  --project qwiklabs-gcp-03-bb316766e33b \
+  --allow-unauthenticated
+```
