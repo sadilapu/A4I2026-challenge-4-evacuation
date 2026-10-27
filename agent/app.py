@@ -244,6 +244,15 @@ def index() -> Any:
     return HTMLResponse("<h1>Florida Evacuation Readiness Agent API is running.</h1>")
 
 
+@app.get("/report", response_class=HTMLResponse)
+def executive_report() -> Any:
+    report_file = STATIC_DIR / "tableau_report.html"
+    if report_file.exists():
+        return FileResponse(str(report_file))
+    return HTMLResponse("<h1>Executive Report not found.</h1>")
+
+
+
 if __name__ == "__main__":
     import uvicorn
 

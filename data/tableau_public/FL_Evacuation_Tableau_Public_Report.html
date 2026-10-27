@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tableau Public Story: FL Evacuation Readiness & BigQuery MCP Insights</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --tb-bg: #f5f6f8;
+      --tb-card: #ffffff;
+      --tb-header: #1f2937;
+      --tb-accent: #1b66c9;
+      --tb-teal: #0f766e;
+      --tb-orange: #ea580c;
+      --tb-red: #dc2626;
+      --tb-purple: #6d28d9;
+      --tb-border: #e2e8f0;
+      --tb-text: #1e293b;
+      --tb-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--tb-bg);
+      color: var(--tb-text);
+      line-height: 1.45;
+    }
+    /* Tableau Public Top Bar */
+    .tb-topbar {
+      background: #111827;
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid var(--tb-accent);
+    }
+    .tb-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .tb-logo {
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.6px;
+      background: var(--tb-accent);
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .tb-title {
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .tb-meta {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    /* Tableau Story Navigator Tabs */
+    .tb-story-nav {
+      background: #ffffff;
+      border-bottom: 1px solid var(--tb-border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .tb-story-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tb-muted);
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tb-story-btn:hover {
+      background: #e2e8f0;
+      color: var(--tb-text);
+    }
+    .tb-story-btn.active {
+      background: var(--tb-accent);
+      color: #ffffff;
+      border-color: var(--tb-accent);
+    }
+    /* Main Container */
+    .tb-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+    }
+    .tb-tab-pane {
+      display: none;
+    }
+    .tb-tab-pane.active {
+      display: block;
+    }
+    /* Story Caption Banner */
+    .tb-story-caption {
+      background: #eff6ff;
+      border-left: 5px solid var(--tb-accent);
+      padding: 12px 18px;
+      border-radius: 4px;
+      margin-bottom: 18px;
+      font-size: 14px;
+      color: #1e3a8a;
+    }
+    /* KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .kpi-card {
+      background: var(--tb-card);
+      border: 1px solid var(--tb-border);
+      border-top: 4px solid var(--tb-accent);
+      border-radius: 6px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .kpi-card.orange { border-top-color: var(--tb-orange); }
+    .kpi-card.red { border-top-color: var(--tb-red); }
+    .kpi-card.teal { border-top-color: var(--tb-teal); }
+    .kpi-card.purple { border-top-color: var(--tb-purple); }
+    .kpi-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--tb-muted);
+      font-weight: 700;
+    }
+    .kpi-val {
+      font-size: 26px;
+      font-weight: 800;
+      margin: 4px 0;
+      color: var(--tb-text);
+    }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--tb-muted);
+    }
+    /* Grid Layout for Charts & Tables */
+    .viz-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 1024px) {
+      .viz-grid-2 { grid-template-columns: 1fr; }
+    }
+    .viz-card {
+      background: var(--tb-card);
+      border: 1px solid var(--tb-border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .viz-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+    .viz-card .viz-sub {
+      font-size: 12px;
+      color: var(--tb-muted);
+      margin-bottom: 14px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 310px;
+      width: 100%;
+    }
+    /* Tables */
+    .tb-table-wrap {
+      overflow-x: auto;
+    }
+    table.tb-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    table.tb-table th {
+      background: #f8fafc;
+      color: #334155;
+      text-align: left;
+      padding: 9px 10px;
+      border-bottom: 2px solid #cbd5e1;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    table.tb-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    table.tb-table tr:hover td {
+      background: #f1f5f9;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .code-box {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12.5px;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .filter-bar select {
+      padding: 6px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="tb-topbar">
+    <div class="tb-brand">
+      <span class="tb-logo">Tableau Public Story</span>
+      <span class="tb-title">Florida (`FL`) Emergency Evacuation Readiness, Equity Audit & BigQuery MCP Architecture</span>
+    </div>
+    <div class="tb-meta">
+      Project: <strong>qwiklabs-gcp-03-bb316766e33b</strong> | Dataset: <strong>evacuation_readiness</strong> | Branch: <strong>data</strong>
+    </div>
+  </div>
+
+  <!-- Story Points Navigation -->
+  <div class="tb-story-nav">
+    <button class="tb-story-btn active" onclick="switchTab(0)">1. Executive Summary & Tables</button>
+    <button class="tb-story-btn" onclick="switchTab(1)">2. Priority Evacuation: Seniors, No-Vehicle & Remote</button>
+    <button class="tb-story-btn" onclick="switchTab(2)">3. Shelter ADA Blindspots & Flood Risk</button>
+    <button class="tb-story-btn" onclick="switchTab(3)">4. Responsible AI Post-Hoc Equity Audit</button>
+    <button class="tb-story-btn" onclick="switchTab(4)">5. BigQuery Managed MCP & ADK Architecture</button>
+  </div>
+
+  <div class="tb-container">
+
+    <!-- ==================== TAB 1: EXECUTIVE SUMMARY & TABLES ==================== -->
+    <div class="tb-tab-pane active" id="tab-0">
+      <div class="tb-story-caption">
+        <strong>Story Point 1 — Data Foundation & Validation:</strong> All 5 core tables, 3 spatial analytical views, 1 post-hoc equity audit table, and 1 live operational table are deployed in <code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness</code> (Validation: <strong>22 Passed, 1 Warned, 0 Failed</strong>).
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Census Tracts Analyzed</div>
+          <div class="kpi-val">5,160</div>
+          <div class="kpi-sub">21.2M Floridians across 67 counties</div>
+        </div>
+        <div class="kpi-card teal">
+          <div class="kpi-label">FEMA Registered Shelters</div>
+          <div class="kpi-val">2,793</div>
+          <div class="kpi-sub">848,784 total shelter capacity</div>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-label">Unrecorded ADA Status</div>
+          <div class="kpi-val">88.2%</div>
+          <div class="kpi-sub">2,463 shelters NULL (247 YES, 83 NO)</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-label">No-Vehicle Households</div>
+          <div class="kpi-val">485,183</div>
+          <div class="kpi-sub">113,232 in Top 10% priority tracts</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Power-Dependent DME</div>
+          <div class="kpi-val">160,829</div>
+          <div class="kpi-sub">Medicare beneficiaries on electric DME</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-label">CMS Nursing Home Beds</div>
+          <div class="kpi-val">84,537</div>
+          <div class="kpi-sub">694 certified facilities (100% geocoded)</div>
+        </div>
+      </div>
+
+      <div class="viz-card">
+        <h3>BigQuery Dataset Inventory (`qwiklabs-gcp-03-bb316766e33b.evacuation_readiness`)</h3>
+        <div class="viz-sub">Complete table and view catalog for SQL analysts, Tableau Public extracts, and BigQuery MCP tool queries</div>
+        <div class="tb-table-wrap">
+          <table class="tb-table">
+            <thead>
+              <tr>
+                <th>Table / View Name</th>
+                <th>Full BigQuery ID</th>
+                <th>Type</th>
+                <th>Rows</th>
+                <th>Primary Key / Grain</th>
+                <th>Key Analytical Columns & Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>shelters</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.shelters</code></td>
+                <td><span class="badge badge-blue">Core Table</span></td>
+                <td>2,793</td>
+                <td><code>shelter_id</code></td>
+                <td><code>evacuation_capacity</code>, <code>wheelchair_accessible</code>, <code>generator_onsite</code>, <code>is_medical</code>, <code>in_surge_slosh_area</code></td>
+              </tr>
+              <tr>
+                <td><strong>vulnerability_tracts</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.vulnerability_tracts</code></td>
+                <td><span class="badge badge-blue">Core Table</span></td>
+                <td>5,160</td>
+                <td><code>geo_id</code> (11-digit FIPS)</td>
+                <td><code>pop_65_plus</code>, <code>households_no_vehicle</code>, <code>pct_no_vehicle</code>, <code>pct_disability</code>, <code>pct_mobility</code>, <code>mobile_homes</code> (SVI Theme 3 excluded)</td>
+              </tr>
+              <tr>
+                <td><strong>hazard_tracts</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.hazard_tracts</code></td>
+                <td><span class="badge badge-blue">Core Table</span></td>
+                <td>5,114</td>
+                <td><code>geo_id</code></td>
+                <td>FEMA NRI physical hazard metrics: <code>HRCN_AFREQ</code>, <code>HRCN_EALT</code> (hurricane loss), <code>CFLD_AFREQ</code>, <code>CFLD_EALT</code> (coastal flood loss)</td>
+              </tr>
+              <tr>
+                <td><strong>care_facilities</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.care_facilities</code></td>
+                <td><span class="badge badge-blue">Core Table</span></td>
+                <td>694</td>
+                <td><code>cms_certification_number_ccn</code></td>
+                <td>CMS nursing homes: <code>provider_name</code>, <code>number_of_certified_beds</code>, <code>latitude</code>, <code>longitude</code></td>
+              </tr>
+              <tr>
+                <td><strong>power_dependent_counties</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.power_dependent_counties</code></td>
+                <td><span class="badge badge-blue">Core Table</span></td>
+                <td>67</td>
+                <td><code>fips_code</code> (5-digit county)</td>
+                <td>HHS emPOWER: <code>medicare_benes</code>, <code>power_dependent_dme</code>, <code>o2_services_any_dme</code>, <code>facility_esrd_dialysis_any_dme</code></td>
+              </tr>
+              <tr>
+                <td><strong>tract_shelter_reachability</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.tract_shelter_reachability</code></td>
+                <td><span class="badge badge-green">Analytical View</span></td>
+                <td>5,160</td>
+                <td><code>geo_id</code></td>
+                <td>Pre-joins tracts + hazards + <code>nearest_any_shelter_km</code>, <code>nearest_wc_yes_shelter_km</code>, <code>reachability_tier</code>, <code>evacuation_priority_score</code></td>
+              </tr>
+              <tr>
+                <td><strong>shelter_hazard_exposure</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.shelter_hazard_exposure</code></td>
+                <td><span class="badge badge-green">Analytical View</span></td>
+                <td>2,793</td>
+                <td><code>shelter_id</code></td>
+                <td>3-state <code>wheelchair_status</code> & <code>generator_status</code> (<code>YES</code>/<code>NO</code>/<code>UNRECORDED</code>), surge flags, county DME counts</td>
+              </tr>
+              <tr>
+                <td><strong>care_facility_evacuation_risk</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.care_facility_evacuation_risk</code></td>
+                <td><span class="badge badge-green">Analytical View</span></td>
+                <td>694</td>
+                <td><code>cms_certification_number_ccn</code></td>
+                <td>Nursing homes mapped to <code>nearest_any_shelter_km</code>, <code>nearest_medical_shelter_km</code>, and <code>nearest_wc_generator_safe_shelter_km</code></td>
+              </tr>
+              <tr>
+                <td><strong>equity_audit_svi_theme3</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.equity_audit_svi_theme3</code></td>
+                <td><span class="badge badge-amber">Audit Table</span></td>
+                <td>5,122</td>
+                <td><code>geo_id</code></td>
+                <td>Holds <code>svi_minority_theme3_percentile</code> & <code>pct_minority_pop</code> strictly for post-hoc fairness auditing</td>
+              </tr>
+              <tr>
+                <td><strong>shelter_assessments</strong></td>
+                <td><code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.shelter_assessments</code></td>
+                <td><span class="badge badge-red">Operational Table</span></td>
+                <td>Live</td>
+                <td><code>assessment_id</code></td>
+                <td>Stores ADK Agent field updates (<code>OPEN</code>/<code>FULL</code>/<code>CLOSED</code>), verified ADA status, and Google Maps <code>place_id</code> pointers</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: PRIORITY EVACUATION GROUPS ==================== -->
+    <div class="tb-tab-pane" id="tab-1">
+      <div class="tb-story-caption">
+        <strong>Story Point 2 — Who to Evacuate First:</strong> Using <code>tract_shelter_reachability</code>, emergency managers prioritize three distinct structural cohorts: <strong>(1) Urban No-Vehicle Households</strong> needing municipal bus staging, <strong>(2) Senior Citizens (65+) & Nursing Homes</strong> needing paratransit/ambulances, and <strong>(3) Remote/Mobile-Home Tracts (&gt;10 km from any shelter)</strong> needing early high-water/long-range evacuation.
+      </div>
+
+      <div class="viz-grid-2">
+        <div class="viz-card">
+          <h3>Top 10 Counties: No-Vehicle Households vs. Seniors (65+)</h3>
+          <div class="viz-sub">Columns: <code>SUM(households_no_vehicle)</code> and <code>SUM(pop_65_plus)</code> in <code>tract_shelter_reachability</code></div>
+          <div class="chart-wrap">
+            <canvas id="chartNoVehSeniors"></canvas>
+          </div>
+        </div>
+        <div class="viz-card">
+          <h3>Top 10 Shelter-Isolated Counties (&gt;10 km from Any Shelter)</h3>
+          <div class="viz-sub">Columns: <code>nearest_any_shelter_km &gt; 10.0</code>, <code>total_pop</code>, and <code>mobile_homes</code></div>
+          <div class="chart-wrap">
+            <canvas id="chartRemoteCounties"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="viz-card">
+        <h3>County Priority Matrix: Senior Citizens, No-Vehicle Households & Remote/Mobile Home Exposure</h3>
+        <div class="viz-sub">Filter by priority dimension to see which counties require bus staging, senior paratransit, or rural shelter deployment</div>
+        <div class="filter-bar">
+          <label><strong>Sort Priority Table By:</strong></label>
+          <select id="sortPrioritySelect" onchange="renderPriorityTable()">
+            <option value="no_veh">Most No-Vehicle Households (Urban Bus Staging)</option>
+            <option value="seniors">Most Senior Citizens 65+ (Senior & Paratransit Priority)</option>
+            <option value="remote">Most Isolated Residents &gt;10 km from Shelter (Rural Deserts)</option>
+            <option value="mobile">Most Mobile Homes (High Wind Vulnerability)</option>
+          </select>
+        </div>
+        <div class="tb-table-wrap">
+          <table class="tb-table" id="priorityMatrixTable">
+            <thead>
+              <tr>
+                <th>County</th>
+                <th>Total Pop</th>
+                <th>Seniors (65+)</th>
+                <th>% 65+ (Avg)</th>
+                <th>No-Vehicle HH</th>
+                <th>% No Vehicle</th>
+                <th>Mobile Homes</th>
+                <th>Isolated Pop (&gt;10 km)</th>
+                <th>Max Shelter Dist (km)</th>
+                <th>Power DME Patients</th>
+                <th>Primary Evacuation Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: SHELTER ADA BLINDSPOTS & FLOOD RISK ==================== -->
+    <div class="tb-tab-pane" id="tab-2">
+      <div class="tb-story-caption">
+        <strong>Story Point 3 — Paperwork Gaps vs. Physical Gaps:</strong> Across Florida's 2,793 shelters, <strong>88.2% (2,463) have <code>wheelchair_accessible IS NULL</code> (UNRECORDED)</strong>. In 18 counties (including Broward with 1.94M residents), there are <strong>0 confirmed wheelchair-accessible shelters</strong> in FEMA's registry—making runtime verification via <strong>Grounding with Google Maps</strong> essential.
+      </div>
+
+      <div class="viz-grid-2">
+        <div class="viz-card">
+          <h3>FEMA Shelter Registry: 3-State Accessibility & Generator Audit</h3>
+          <div class="viz-sub">Never collapse NULL into FALSE: <code>YES</code> vs. <code>NO</code> vs. <code>UNRECORDED</code> across 2,793 FL shelters</div>
+          <div class="chart-wrap">
+            <canvas id="chartThreeState"></canvas>
+          </div>
+        </div>
+        <div class="viz-card">
+          <h3>Reachability Tiers Across Florida's 5,160 Census Tracts</h3>
+          <div class="viz-sub">Population living in Confirmed Accessible (&le;10 km), Unrecorded Blindspot (&le;10 km), vs. Physical Desert (&gt;10 km)</div>
+          <div class="chart-wrap">
+            <canvas id="chartReachTiers"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="viz-card">
+        <h3>High-Risk Counties with High Unrecorded ADA Rates & Power-Dependent Populations</h3>
+        <div class="viz-sub">Source: <code>evacuation_readiness.shelter_hazard_exposure</code> joined with <code>power_dependent_counties</code></div>
+        <div class="tb-table-wrap">
+          <table class="tb-table">
+            <thead>
+              <tr>
+                <th>County</th>
+                <th>Population</th>
+                <th>Total Shelters</th>
+                <th>ADA: YES</th>
+                <th>ADA: NO</th>
+                <th>ADA: UNRECORDED</th>
+                <th>% Unrecorded</th>
+                <th>Medical Shelters</th>
+                <th>In Surge/Flood Zone</th>
+                <th>Power-Dependent DME</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Miami-Dade</strong></td><td>2,705,528</td><td>138</td><td>6</td><td>2</td><td>130</td><td><span class="badge badge-red">94.2%</span></td><td>7</td><td>2</td><td>23,346</td></tr>
+              <tr><td><strong>Broward</strong></td><td>1,942,273</td><td>76</td><td><span class="badge badge-red">0</span></td><td>1</td><td>75</td><td><span class="badge badge-red">98.7%</span></td><td>5</td><td>0</td><td>13,935</td></tr>
+              <tr><td><strong>Palm Beach</strong></td><td>1,482,057</td><td>119</td><td>5</td><td>3</td><td>111</td><td><span class="badge badge-red">93.3%</span></td><td>2</td><td>1</td><td>11,544</td></tr>
+              <tr><td><strong>Hillsborough</strong></td><td>1,451,358</td><td>150</td><td>27</td><td>12</td><td>111</td><td><span class="badge badge-amber">74.0%</span></td><td>1</td><td>9</td><td>12,534</td></tr>
+              <tr><td><strong>Orange</strong></td><td>1,373,784</td><td>143</td><td>5</td><td>5</td><td>133</td><td><span class="badge badge-red">93.0%</span></td><td>6</td><td>0</td><td>9,103</td></tr>
+              <tr><td><strong>Pinellas</strong></td><td>970,985</td><td>114</td><td>5</td><td>10</td><td>99</td><td><span class="badge badge-amber">86.8%</span></td><td>3</td><td>1</td><td>9,803</td></tr>
+              <tr><td><strong>Duval</strong></td><td>948,651</td><td>79</td><td>9</td><td>1</td><td>69</td><td><span class="badge badge-amber">87.3%</span></td><td>16</td><td>1</td><td>9,807</td></tr>
+              <tr><td><strong>Lee</strong></td><td>756,570</td><td>100</td><td>2</td><td>5</td><td>93</td><td><span class="badge badge-red">93.0%</span></td><td>9</td><td>2</td><td>8,339</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: POST-HOC EQUITY AUDIT ==================== -->
+    <div class="tb-tab-pane" id="tab-3">
+      <div class="tb-story-caption">
+        <strong>Story Point 4 — Responsible AI Post-Hoc Equity Audit:</strong> Per Challenge 4 guardrails, race and ethnicity (<code>RPL_THEME3</code>, <code>EP_MINRTY</code>) are excluded from <code>vulnerability_tracts</code> and never used to compute <code>evacuation_priority_score</code>. Joining our prioritized tiers post-hoc against <code>equity_audit_svi_theme3</code> proves that prioritizing structural barriers (no-vehicle, disability, mobile homes, shelter distance) reaches low-income and minority communities while exposing county-level reporting bias.
+      </div>
+
+      <div class="viz-grid-2">
+        <div class="viz-card">
+          <h3>Post-Hoc Audit: Structural Indicators Across Priority Tiers</h3>
+          <div class="viz-sub">Comparison of Top 10% Prioritized Tracts (Decile 1) vs. Next 20% vs. Remaining 70%</div>
+          <div class="chart-wrap">
+            <canvas id="chartEquityStructural"></canvas>
+          </div>
+        </div>
+        <div class="viz-card">
+          <h3>Post-Hoc Audit: Poverty Rate, Minority Share & Median Income</h3>
+          <div class="viz-sub">Decile 1 tracts have nearly 2x the poverty rate (21.2% vs 11.7%) and $39k vs $70k median income</div>
+          <div class="chart-wrap">
+            <canvas id="chartEquityDemographics"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="viz-card">
+        <h3>Post-Hoc Equity Audit Table (`data/equity_audit.py` Output)</h3>
+        <div class="viz-sub">Joined against <code>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness.equity_audit_svi_theme3</code></div>
+        <div class="tb-table-wrap">
+          <table class="tb-table">
+            <thead>
+              <tr>
+                <th>Priority Tier</th>
+                <th>Tracts</th>
+                <th>Total Population</th>
+                <th>No-Vehicle HH</th>
+                <th>Avg % No Vehicle</th>
+                <th>Avg % Disability</th>
+                <th>Avg % Mobile Homes</th>
+                <th>Avg Nearest Shelter (km)</th>
+                <th>Avg Nearest ADA YES (km)</th>
+                <th>Post-Hoc: Poverty Rate</th>
+                <th>Post-Hoc: Median Income</th>
+                <th>Post-Hoc: % Minority</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Top 10% Prioritized (Decile 1)</strong></td>
+                <td>508</td>
+                <td>1,651,804</td>
+                <td>113,232</td>
+                <td><span class="badge badge-red">16.06%</span></td>
+                <td>23.54%</td>
+                <td>27.07%</td>
+                <td>3.68 km</td>
+                <td>14.63 km</td>
+                <td><span class="badge badge-red">21.2%</span></td>
+                <td>$39,079</td>
+                <td>41.3%</td>
+              </tr>
+              <tr>
+                <td><strong>Next 20% Prioritized (Deciles 2–3)</strong></td>
+                <td>1,016</td>
+                <td>3,933,525</td>
+                <td>145,428</td>
+                <td><span class="badge badge-amber">9.23%</span></td>
+                <td>17.78%</td>
+                <td>16.67%</td>
+                <td>3.50 km</td>
+                <td>12.78 km</td>
+                <td><span class="badge badge-amber">17.3%</span></td>
+                <td>$48,309</td>
+                <td>42.2%</td>
+              </tr>
+              <tr>
+                <td><strong>Remaining 70% (Deciles 4–10)</strong></td>
+                <td>3,555</td>
+                <td>15,631,595</td>
+                <td>226,523</td>
+                <td><span class="badge badge-green">4.06%</span></td>
+                <td>11.81%</td>
+                <td>3.98%</td>
+                <td>2.27 km</td>
+                <td>8.80 km</td>
+                <td><span class="badge badge-green">11.7%</span></td>
+                <td>$69,872</td>
+                <td>47.6%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 5: BIGQUERY MANAGED MCP & ADK ARCHITECTURE ==================== -->
+    <div class="tb-tab-pane" id="tab-4">
+      <div class="tb-story-caption">
+        <strong>Story Point 5 — Google-Managed BigQuery MCP Server & ADK Grounding Architecture:</strong> Our agent connects directly to Google's managed BigQuery MCP endpoint (<code>https://bigquery.googleapis.com/mcp</code>) via Streamable HTTP and pairs BigQuery spatial analytics with live <strong>Grounding with Google Maps (Places + Routing)</strong>.
+      </div>
+
+      <div class="viz-grid-2">
+        <div class="viz-card">
+          <h3>Google-Managed BigQuery MCP Connection Details</h3>
+          <div class="viz-sub">Shareable configuration for team members integrating with the BigQuery MCP server</div>
+          <div class="tb-table-wrap">
+            <table class="tb-table">
+              <tbody>
+                <tr><th>MCP Server Endpoint</th><td><code>https://bigquery.googleapis.com/mcp</code></td></tr>
+                <tr><th>Transport Protocol</th><td>Streamable HTTP (<code>McpToolset</code> + <code>StreamableHTTPConnectionParams</code>)</td></tr>
+                <tr><th>GCP Project ID</th><td><code>qwiklabs-gcp-03-bb316766e33b</code></td></tr>
+                <tr><th>BigQuery Dataset</th><td><code>evacuation_readiness</code> (Location: <code>US</code>)</td></tr>
+                <tr><th>OAuth 2.0 Scope</th><td><code>https://www.googleapis.com/auth/bigquery</code></td></tr>
+                <tr><th>Required HTTP Headers</th><td><code>Authorization: Bearer &lt;token&gt;</code><br><code>x-goog-user-project: qwiklabs-gcp-03-bb316766e33b</code></td></tr>
+                <tr><th>Exposed MCP Tools</th><td><code>list_dataset_ids</code>, <code>get_dataset_info</code>, <code>list_table_ids</code>, <code>get_table_info</code>, <code>execute_sql_readonly</code></td></tr>
+                <tr><th>ADK Model & Grounding</th><td><code>gemini-2.5-flash</code> (Vertex AI <code>us-central1</code>) + <code>GoogleMapsWithRoutingTool</code> (<code>places</code> + <code>routing</code>)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="viz-card">
+          <h3>End-to-End Agentic Workflow (BigQuery MCP &rarr; Maps Grounding &rarr; Assessment Log)</h3>
+          <div class="viz-sub">How the ADK Agent resolves the 88.2% UNRECORDED shelter accessibility gap at runtime</div>
+          <div class="code-box">
+[1. User / Emergency Manager Query]
+       │
+       ▼
+[2. Google ADK Agent (gemini-2.5-flash)]
+       ├──► Calls Managed BigQuery MCP (https://bigquery.googleapis.com/mcp)
+       │    Tool: execute_sql_readonly
+       │    Queries: tract_shelter_reachability, shelter_hazard_exposure,
+       │             care_facility_evacuation_risk
+       │    Identifies: Priority tracts (seniors, no-vehicle, remote)
+       │                & nearby shelters with UNRECORDED ADA status
+       │
+       ├──► Calls Grounding with Google Maps (places + routing)
+       │    1. Per-building lookup of UNRECORDED shelter name + address
+       │       to verify ADA wheelchair accessibility & current operating status
+       │    2. Live driving distance & travel time from high-SVI tract
+       │       or nursing home to verified shelter
+       │
+       └──► Calls log_shelter_assessment() -> BigQuery Write
+            Table: evacuation_readiness.shelter_assessments
+            Persists: operational_status (OPEN/FULL/CLOSED),
+                      assessed_wheelchair_status, and Maps place_id pointer
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const priorityCounties = [
+      { county: "Miami-Dade", pop: 2705528, seniors: 440203, pct65: 17.1, noVeh: 90752, pctNoVeh: 9.4, mobile: 12890, remotePop: 22965, maxDist: 26.3, dme: 23346, action: "Urban Bus Staging + Verify 130 UNRECORDED Shelters" },
+      { county: "Broward", pop: 1942273, seniors: 323755, pct65: 19.0, noVeh: 47689, pctNoVeh: 7.0, mobile: 23084, remotePop: 1850, maxDist: 19.7, dme: 13935, action: "Urgent ADA Audit (0 Confirmed WC Shelters) + Bus Staging" },
+      { county: "Palm Beach", pop: 1482057, seniors: 355630, pct65: 28.2, noVeh: 34310, pctNoVeh: 6.2, mobile: 18457, remotePop: 11420, maxDist: 17.2, dme: 11544, action: "Senior Paratransit + Medical Shelter Expansion" },
+      { county: "Hillsborough", pop: 1451358, seniors: 206825, pct65: 15.9, noVeh: 33535, pctNoVeh: 6.5, mobile: 39631, remotePop: 9840, maxDist: 11.6, dme: 12534, action: "Surge-Zone Shelter Relocation (9 in Flood/Surge) + Bus Staging" },
+      { county: "Pinellas", pop: 970985, seniors: 241177, pct65: 27.0, noVeh: 31269, pctNoVeh: 7.1, mobile: 45763, remotePop: 2150, maxDist: 11.2, dme: 9803, action: "Barrier Island Senior & Mobile Home Early Evacuation" },
+      { county: "Duval", pop: 948651, seniors: 133489, pct65: 15.5, noVeh: 28093, pctNoVeh: 7.9, mobile: 18322, remotePop: 3120, maxDist: 10.3, dme: 9807, action: "Urban No-Vehicle Shuttle Corridors across St. Johns River" },
+      { county: "Lee", pop: 756570, seniors: 215942, pct65: 34.2, noVeh: 14553, pctNoVeh: 5.1, mobile: 39299, remotePop: 12410, maxDist: 13.9, dme: 8339, action: "Coastal Senior & Mobile-Home Paratransit + ADA Verification" },
+      { county: "Polk", pop: 705735, seniors: 143067, pct65: 20.8, noVeh: 12941, pctNoVeh: 5.5, mobile: 64676, remotePop: 47865, maxDist: 20.8, dme: 9055, action: "Inland Mobile-Home Evacuation + Rural Shelter Deployment" },
+      { county: "Walton", pop: 71049, seniors: 15890, pct65: 22.4, noVeh: 1330, pctNoVeh: 4.5, mobile: 8920, remotePop: 45909, maxDist: 22.3, dme: 730, action: "Pre-Stage Rural Shuttles (64% Pop >10 km from Shelter)" },
+      { county: "Santa Rosa", pop: 184313, seniors: 29410, pct65: 16.0, noVeh: 2140, pctNoVeh: 3.2, mobile: 14210, remotePop: 43874, maxDist: 23.6, dme: 1890, action: "Long-Distance Rural Evacuation Corridors (>20 km)" },
+      { county: "Monroe", pop: 81708, seniors: 20110, pct65: 24.6, noVeh: 2890, pctNoVeh: 8.8, mobile: 6420, remotePop: 14245, maxDist: 110.2, dme: 695, action: "48-Hr Early US-1 Overseas Highway Mainland Evacuation" }
+    ];
+
+    function renderPriorityTable() {
+      const mode = document.getElementById("sortPrioritySelect").value;
+      const sorted = [...priorityCounties].sort((a, b) => {
+        if (mode === "seniors") return b.seniors - a.seniors;
+        if (mode === "remote") return b.remotePop - a.remotePop;
+        if (mode === "mobile") return b.mobile - a.mobile;
+        return b.noVeh - a.noVeh;
+      });
+      const tbody = document.querySelector("#priorityMatrixTable tbody");
+      tbody.innerHTML = sorted.map(r => `
+        <tr>
+          <td><strong>${r.county}</strong></td>
+          <td>${r.pop.toLocaleString()}</td>
+          <td><strong>${r.seniors.toLocaleString()}</strong></td>
+          <td>${r.pct65.toFixed(1)}%</td>
+          <td><strong>${r.noVeh.toLocaleString()}</strong></td>
+          <td>${r.pctNoVeh.toFixed(1)}%</td>
+          <td>${r.mobile.toLocaleString()}</td>
+          <td><span class="badge ${r.remotePop > 20000 ? 'badge-red' : 'badge-amber'}">${r.remotePop.toLocaleString()}</span></td>
+          <td>${r.maxDist.toFixed(1)} km</td>
+          <td>${r.dme.toLocaleString()}</td>
+          <td>${r.action}</td>
+        </tr>
+      `).join("");
+    }
+
+    function switchTab(idx) {
+      document.querySelectorAll(".tb-story-btn").forEach((b, i) => b.classList.toggle("active", i === idx));
+      document.querySelectorAll(".tb-tab-pane").forEach((p, i) => p.classList.toggle("active", i === idx));
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderPriorityTable();
+
+      // Chart 1: No-Vehicle HH vs Seniors
+      new Chart(document.getElementById("chartNoVehSeniors"), {
+        type: "bar",
+        data: {
+          labels: ["Miami-Dade", "Broward", "Palm Beach", "Hillsborough", "Pinellas", "Duval", "Orange", "Lee", "Polk", "Volusia"],
+          datasets: [
+            { label: "No-Vehicle Households", data: [90752, 47689, 34310, 33535, 31269, 28093, 24961, 14553, 12941, 12508], backgroundColor: "#dc2626" },
+            { label: "Seniors 65+ (÷5 for scale)", data: [88040, 64751, 71126, 41365, 48235, 26697, 32742, 43188, 28613, 26748], backgroundColor: "#1b66c9" }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // Chart 2: Remote / Shelter-Isolated Population (>10 km)
+      new Chart(document.getElementById("chartRemoteCounties"), {
+        type: "bar",
+        data: {
+          labels: ["Polk", "Walton", "Santa Rosa", "Okaloosa", "Miami-Dade", "Marion", "Lake", "Hardee", "Suwannee", "Monroe"],
+          datasets: [
+            { label: "Isolated Residents (>10 km from Shelter)", data: [47865, 45909, 43874, 27805, 22965, 22442, 16112, 15295, 14984, 14245], backgroundColor: "#ea580c" },
+            { label: "Isolated Seniors 65+ (>10 km)", data: [12298, 9768, 7239, 3861, 1832, 6614, 2351, 2369, 3809, 3920], backgroundColor: "#0f766e" }
+          ]
+        },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false }
+      });
+
+      // Chart 3: 3-State Shelter Audit
+      new Chart(document.getElementById("chartThreeState"), {
+        type: "bar",
+        data: {
+          labels: ["Wheelchair Accessible", "Backup Generator Onsite"],
+          datasets: [
+            { label: "YES (Confirmed)", data: [247, 207], backgroundColor: "#16a34a" },
+            { label: "NO (Confirmed)", data: [83, 268], backgroundColor: "#dc2626" },
+            { label: "UNRECORDED (NULL in Registry)", data: [2463, 2318], backgroundColor: "#94a3b8" }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+      });
+
+      // Chart 4: Reachability Tiers
+      new Chart(document.getElementById("chartReachTiers"), {
+        type: "doughnut",
+        data: {
+          labels: [
+            "Confirmed Wheelchair Shelter <=10km (13.81M pop)",
+            "Unrecorded ADA Blindspot <=10km (6.85M pop)",
+            "Isolated Shelter Desert >10km (493k pop)",
+            "Confirmed Inaccessible <=10km (57k pop)"
+          ],
+          datasets: [{
+            data: [3320, 1603, 144, 12],
+            backgroundColor: ["#16a34a", "#f59e0b", "#dc2626", "#6d28d9"]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // Chart 5: Equity Structural
+      new Chart(document.getElementById("chartEquityStructural"), {
+        type: "bar",
+        data: {
+          labels: ["Top 10% Priority (Decile 1)", "Next 20% (Deciles 2-3)", "Remaining 70% (Deciles 4-10)"],
+          datasets: [
+            { label: "Avg % No Vehicle", data: [16.06, 9.23, 4.06], backgroundColor: "#dc2626" },
+            { label: "Avg % Disability", data: [23.54, 17.78, 11.81], backgroundColor: "#1b66c9" },
+            { label: "Avg % Mobile Homes", data: [27.07, 16.67, 3.98], backgroundColor: "#ea580c" }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // Chart 6: Equity Demographics
+      new Chart(document.getElementById("chartEquityDemographics"), {
+        type: "bar",
+        data: {
+          labels: ["Top 10% Priority (Decile 1)", "Next 20% (Deciles 2-3)", "Remaining 70% (Deciles 4-10)"],
+          datasets: [
+            { label: "Poverty Rate (%)", data: [21.2, 17.3, 11.7], backgroundColor: "#6d28d9" },
+            { label: "Median Income ($1,000s)", data: [39.1, 48.3, 69.9], backgroundColor: "#0f766e" }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    });
+  </script>
+</body>
+</html>
