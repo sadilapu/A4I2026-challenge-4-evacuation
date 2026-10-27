@@ -739,7 +739,7 @@
       initSpeechRecognition();
       initInteractiveOverlayMap();
       await loadAvailableCounties();
-      await loadCountyWorkspace(activeCountyFips, true);
+      await loadCountyWorkspace(activeCountyFips, false);
     });
 
     async function loadAvailableCounties() {
@@ -791,7 +791,7 @@
       const q = currentPersonaMode === 'HOSPITAL'
         ? `Show hospital, nursing home, and backup generator readiness in ${activeCountyName}.`
         : `Show shelter safety checks, flood zones, and bus pickup routes for families without cars in ${activeCountyName}.`;
-      await loadCountyWorkspace(activeCountyFips, true, q);
+      await loadCountyWorkspace(activeCountyFips, false, q);
     }
 
     function updateActiveCountyLabels(fips, countyLabel) {
@@ -1373,7 +1373,7 @@
         document.getElementById('voiceQueryInput').value = transcript;
         if (event.results[event.results.length - 1].isFinal) {
           stopVoiceRecording();
-          submitVoiceOrTextQuery(transcript);
+          submitVoiceOrTextQuery(transcript, true);
         }
       };
 
@@ -1463,7 +1463,7 @@
           const json = await res.json();
           if (json.status === 'ok' && json.transcript) {
             document.getElementById('voiceQueryInput').value = json.transcript;
-            submitVoiceOrTextQuery(json.transcript);
+            submitVoiceOrTextQuery(json.transcript, true);
           } else {
             updateMicUiState(false, 'Could not hear clearly — please try again');
           }
@@ -1489,10 +1489,10 @@
     function triggerSampleQuestion(q) {
       unlockAudioPlayerOnGesture();
       document.getElementById('voiceQueryInput').value = q;
-      submitVoiceOrTextQuery(q);
+      submitVoiceOrTextQuery(q, false);
     }
 
-    async function submitVoiceOrTextQuery(explicitQuery) {
+    async function submitVoiceOrTextQuery(explicitQuery, isVoiceInput = false) {
       const inputEl = document.getElementById('voiceQueryInput');
       const q = (explicitQuery || inputEl.value || '').trim();
       if (!q) return;
@@ -1518,7 +1518,7 @@
           currentPersonaAction = fastPayload;
           briefData = fastPayload;
           syncCountyFromPayload(fastPayload);
-          renderPersonaActionPayload(fastPayload, true);
+          renderPersonaActionPayload(fastPayload, Boolean(isVoiceInput));
           renderFullCountyTables(fastPayload);
         }
 

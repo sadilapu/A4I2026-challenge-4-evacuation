@@ -1,3 +1,38 @@
+# EvacPulse AI — Adaptive Evacuation Readiness & Vulnerable Community Planning (Challenge 4)
+
+**Agents for Impact 2026 · Branch: `challenge04`**
+- **Live Cloud Run Deployment**: [https://evacuation-readiness-agent-360663039447.us-central1.run.app](https://evacuation-readiness-agent-360663039447.us-central1.run.app)
+- **Agent Source Code**: [`agent/`](agent/) ([`agent/evacuation_agent/agent.py`](agent/evacuation_agent/agent.py), [`agent/evacuation_agent/tools.py`](agent/evacuation_agent/tools.py), [`agent/server.py`](agent/server.py), [`agent/static/index.html`](agent/static/index.html))
+
+---
+
+## Executive Summary: Problem Statement & Our Solution (`EvacPulse AI`)
+
+### 1. The Problem: Why Static Evacuation Plans Fail Vulnerable Residents
+When a major hurricane approaches Florida, evacuation plans implicitly assume households can get in a personal vehicle and drive inland. After Hurricane Ian, the median age of fatalities was in the seventies—concentrated among residents with **no vehicle**, **mobility impairments**, or **electricity-dependent medical equipment** (oxygen concentrators, ventilators, home dialysis).
+
+Emergency managers and hospital planners preparing pre-season readiness briefs face four compounding data blind spots across federal datasets:
+1. **Paperwork Silences vs. Physical Reality (`UNRECORDED ≠ NO`)**: Across Florida's **2,793 FEMA National Shelter System (`shelters`)** records (848,784 total spaces), **88% have `NULL` (unrecorded) wheelchair accessibility** and thousands lack generator metadata. Treating `NULL` as `"Not Accessible"` discards nearly 90% of shelter capacity; treating it as `"Yes"` risks sending wheelchair users to inaccessible buildings.
+2. **Stale Historical Registries**: FEMA's shelter table and CMS's nursing home registry are static snapshots. Facilities close, relocate, or change operating names (e.g., *First Presbyterian Church of Maitland* → *Maitland Presbyterian Church*, or *Page Rehabilitation and Healthcare Center* in Fort Myers), and storm surge (`in_surge_slosh_area = TRUE`) renders coastal wind shelters lethal during surge events.
+3. **Straight-Line Distance vs. Real Street Drive Times for Carless Households**: Census tracts (`vulnerability_tracts`) identify exactly where zero-vehicle, elderly (`pct_age_65_plus`), disability-prevalent (`pct_disability`), and mobile-home households cluster, while BigQuery `ST_DISTANCE` computes straight-line distance—not actual road travel times across bridges and waterways required to stage para-transit buses 48 hours before tropical-storm-force winds.
+4. **Disconnected Clinical Power Dependencies**: HHS emPOWER (`power_dependent_counties`) reports electricity-dependent Medicare beneficiaries at the county level, while CMS (`care_facilities`) tracks nursing homes at the point level without linking them to nearby generator-backed (`generator_onsite = TRUE`), surge-safe shelters.
+
+---
+
+### 2. Our Solution: **EvacPulse AI** (Multi-County Voice, Map & Grounded Readiness Agent)
+**EvacPulse AI** is an end-to-end **Google ADK (`google-adk`)** agent and plain-English decision workspace deployed on **Google Cloud Run** that unifies all three Challenge 4 tracks (**🏚️ Shelter Readiness**, **🚌 Zero-Car Transit Lifeline**, and **🏥 Medically & Power-Dependent Care**) across **all 67 Florida counties**.
+
+#### Key Capabilities & Architecture
+| Capability | How EvacPulse AI Solves It |
+|---|---|
+| **1. Multi-Agent ADK Architecture + Live Grounding with Google Maps** | Built with Google ADK (`root_agent` + `maps_grounding_subagent` wrapped as `AgentTool` + Google-Managed BigQuery MCP `McpToolset`). Calls **Vertex AI Grounding with Google Maps** (`Tool(google_maps=GoogleMaps(enable_widget=True))`) at runtime on specific named facilities and origin-to-shelter corridors to verify **live operating status**, catch **facility renamings**, confirm **wheelchair accessibility**, and compare **straight-line `ST_DISTANCE` vs. live street drive times**. |
+| **2. Rigorous Epistemic Honesty (`UNRECORDED` vs. `NO` + Equity Audit)** | Explicitly separates `CONFIRMED_YES`, `CONFIRMED_NO`, and `UNRECORDED (NULL)` across both wheelchair accessibility and backup generators. Includes a built-in **Post-Hoc Reporting Bias & Equity Audit** (`run_equity_audit`) proving that high-SVI tracts (`rpl_themes >= 0.75`) suffer disproportionate `UNRECORDED` paperwork gaps, and provides a **live BigQuery Write-Back** (`record_field_assessment` → `shelter_assessments`) so inspectors can close paperwork gaps in real time. |
+| **3. Dynamic All-67-Florida-County Switching & Parallel Spatial SQL** | Switch seamlessly across any Florida county via the top dropdown or natural voice/text search (`resolve_county_from_query`). Executes all 4 BigQuery spatial audits (`audit_county_shelters`, `find_zero_car_transit_gaps`, `check_medical_power_gaps`, `run_equity_audit`) concurrently via `ThreadPoolExecutor` for sub-second county switching. |
+| **4. Role-Adaptive Views & Interactive In-Map Overlays** | Automatically adapts KPIs, checklists, and map layers between **🏛️ Local Emergency Planner View** (shelter verification triage, SLOSH storm-surge exclusion circles, 48-hour bus staging routes) and **🏥 Hospital & Nursing Home View** (CMS nursing home 10 km generator-shelter radius, HHS emPOWER electricity-dependent populations, patient transfer corridors). All pins, surge hazard zones, and dashed transfer routes render directly inside an interactive **Leaflet + Google Maps Road/Satellite** canvas paired with a live street-level Google Maps inspector (with compliant `translate="no"` attribution). |
+| **5. Voice-Driven Briefing with Natural Gemini 2.5 Flash TTS (`Kore`)** | Emergency managers can tap the microphone to ask questions by voice (Web Speech API + Gemini 2.5 Flash multimodal transcription fallback). When a user records a voice question, EvacPulse AI synthesizes a concise, paraphrased spoken readiness briefing using **Vertex AI Gemini 2.5 Flash TTS (`Kore` voice, `audio/wav`)**—while staying quiet during silent dropdown or text browsing unless the user clicks **Replay Audio**. |
+
+---
+
 # Challenge 4—Adaptive Evacuation Readiness & Vulnerable Community Planning
 
 **Agents for Impact 2026**

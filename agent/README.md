@@ -1,4 +1,25 @@
-# Your agent goes here
+# EvacPulse AI — Agent Architecture & Problem/Solution Reference (`agent/`)
+
+**Live Cloud Run Service**: [https://evacuation-readiness-agent-360663039447.us-central1.run.app](https://evacuation-readiness-agent-360663039447.us-central1.run.app)
+
+## Problem & Solution Overview
+
+### Problem
+County emergency managers and hospital planners in Florida must prepare pre-season hurricane evacuation briefs using fragmented federal datasets where:
+- **88% of Florida shelters (`shelters`) have `NULL` (unrecorded) wheelchair accessibility**, which naive tools conflate with `"No"`.
+- **Static 2022 FEMA/CMS registries** cannot tell if a building has closed, moved, or changed its name, nor can BigQuery `ST_DISTANCE` provide real-world road drive times across bridges for zero-vehicle households (`vulnerability_tracts`).
+- **CMS nursing homes (`care_facilities`) and HHS emPOWER electricity-dependent populations (`power_dependent_counties`)** are disconnected from nearby generator-backed (`generator_onsite = TRUE`), storm-surge-safe (`in_surge_slosh_area = FALSE`) shelters.
+
+### Solution (`EvacPulse AI`)
+This directory contains the production **Google ADK (`google-adk`)** multi-agent system, FastAPI server, and plain-English geospatial web workspace:
+- [`evacuation_agent/agent.py`](evacuation_agent/agent.py): Defines `root_agent` + `maps_grounding_subagent` (`AgentTool`) + Google-Managed BigQuery MCP toolset (`McpToolset`).
+- [`evacuation_agent/tools.py`](evacuation_agent/tools.py): Parallelized BigQuery spatial SQL tools (`audit_county_shelters`, `find_zero_car_transit_gaps`, `check_medical_power_gaps`, `run_equity_audit`), live **Grounding with Google Maps** (`verify_place_with_maps_grounding`), BigQuery field inspection write-back (`record_field_assessment`), dynamic 67-county Florida resolver (`resolve_county_from_query`), and **Gemini 2.5 Flash TTS (`Kore`)** paraphrased voice synthesis (`synthesize_natural_speech_wav`).
+- [`server.py`](server.py): FastAPI web runtime serving `/`, `/api/persona-action`, `/api/chat`, `/api/verify-place`, `/api/field-assessment`, `/api/voice-transcribe`, and `/api/voice-tts`.
+- [`static/index.html`](static/index.html): Non-technical, role-adaptive emergency readiness UI with interactive in-map overlays, dynamic county switching, and voice-input-triggered audio readback.
+
+---
+
+# Challenge 4 Agent Guidelines (Original Reference)
 
 This folder is empty on purpose.
 
