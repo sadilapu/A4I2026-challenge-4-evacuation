@@ -35,12 +35,16 @@ from evacuation_agent.config import (
     MODEL_NAME,
     PROJECT_ID,
 )
+import base64
 from evacuation_agent.tools import (
     audit_county_shelters,
+    build_persona_action_response,
     check_medical_power_gaps,
+    classify_persona_and_intent,
     find_zero_car_transit_gaps,
     record_field_assessment,
     run_equity_audit,
+    transcribe_voice_audio,
     verify_place_with_maps_grounding,
 )
 
@@ -104,6 +108,17 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     user_id: str = "county_emergency_manager"
+    county_fips: str = DEFAULT_COUNTY_FIPS
+
+
+class VoiceTranscribeRequest(BaseModel):
+    audio_base64: str = Field(..., description="Base64-encoded audio from microphone")
+    mime_type: str = Field(default="audio/webm", description="MIME type of recorded audio")
+
+
+class PersonaActionRequest(BaseModel):
+    question: str
+    county_fips: str = DEFAULT_COUNTY_FIPS
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -269,9 +284,49 @@ async def api_record_field_assessment(req: FieldAssessmentRequest) -> Dict[str, 
     )
 
 
+@app.post("/api/voice-transcribe")
+async def api_voice_transcribe(req: VoiceTranscribeRequest) -> Dict[str, Any]:
+    """Transcribe browser microphone audio via Vertex AI Gemini 2.5 Flash."""
+    loop = asyncio.get_running_loop()
+    raw_bytes = base64.b64decode(req.audio_base64)
+    transcript = await loop.run_in_executor(
+        None,
+        transcribe_voice_audio,
+        raw_bytes,
+        req.mime_type,
+    )
+    persona_info = classify_persona_and_intent(transcript)
+    return {
+        "status": "ok",
+        "transcript": transcript,
+        "persona_info": persona_info,
+    }
+
+
+@app.post("/api/persona-action")
+async def api_persona_action(req: PersonaActionRequest) -> Dict[str, Any]:
+    """Fast persona identification and dynamic actionable UI deck builder."""
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(
+        None,
+        build_persona_action_response,
+        req.question,
+        req.county_fips,
+    )
+    return {"status": "ok", **result}
+
+
 @app.post("/api/chat")
 async def api_chat(req: ChatRequest) -> Dict[str, Any]:
-    """Execute a conversational turn through the ADK Runner (`root_agent`)."""
+    """Execute a conversational turn through the ADK Runner (`root_agent`) + parallel Persona Action builder."""
+    loop = asyncio.get_running_loop()
+    persona_future = loop.run_in_executor(
+        None,
+        build_persona_action_response,
+        req.message,
+        req.county_fips,
+    )
+
     session_id = req.session_id or f"sess-{uuid.uuid4().hex[:10]}"
     existing = await session_service.get_session(
         app_name=APP_NAME,
@@ -319,7 +374,6 @@ async def api_chat(req: ChatRequest) -> Dict[str, Any]:
                 if getattr(part, "text", None) and event.is_final_response():
                     response_texts.append(part.text)
 
-        # Also check event-level grounding_metadata if populated directly by built-in tool
         gm = getattr(event, "grounding_metadata", None)
         if gm and getattr(gm, "grounding_chunks", None):
             for ch in gm.grounding_chunks:
@@ -333,6 +387,7 @@ async def api_chat(req: ChatRequest) -> Dict[str, Any]:
                     if src_item not in grounding_sources:
                         grounding_sources.append(src_item)
 
+    persona_payload = await persona_future
     final_reply = "\n\n".join(t.strip() for t in response_texts if t.strip())
     return {
         "status": "ok",
@@ -340,6 +395,7 @@ async def api_chat(req: ChatRequest) -> Dict[str, Any]:
         "reply": final_reply,
         "tool_calls": tool_calls_made,
         "google_maps_sources": grounding_sources,
+        "persona_action": persona_payload,
     }
 
 

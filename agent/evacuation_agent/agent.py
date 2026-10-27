@@ -1,6 +1,7 @@
 """Challenge 4 ADK Root Agent & Maps Grounding Sub-Agent Architecture.
 
 Combines:
+- Persona & Intent Classifier (`classify_persona_and_intent`) for Local Planner vs. Hospital/Clinical personas
 - Option 1 (Primary Spine): Ghost Shelter & Accessibility Auditor (`audit_county_shelters`)
 - Option 2: Zero-Car Transit Lifeline (`find_zero_car_transit_gaps`)
 - Option 3: Generator-Blind Nursing Home Alert (`check_medical_power_gaps`)
@@ -29,6 +30,7 @@ from .config import DEFAULT_COUNTY_FIPS, MODEL_NAME, PROJECT_ID
 from .tools import (
     audit_county_shelters,
     check_medical_power_gaps,
+    classify_persona_and_intent,
     find_zero_car_transit_gaps,
     record_field_assessment,
     run_equity_audit,
@@ -143,7 +145,11 @@ maps_grounding_subagent = Agent(
 
 ROOT_SYSTEM_INSTRUCTION = f"""You are the **Adaptive Evacuation Readiness & Vulnerable Community Planning Agent** for **Lee County, Florida (`county_fips = '{DEFAULT_COUNTY_FIPS}'`)**, operating in **mid-August** before peak Atlantic hurricane season.
 
-Your user is a County Emergency Manager who must decide where to send field inspectors, where to stage municipal transit buses at T-minus 48 hours, and which nursing homes require backup-power mutual-aid agreements before September.
+Your user may be speaking or typing from one of two operational personas:
+1. **`LOCAL_PLANNER` (County Emergency Management / Municipal Transit Planner)**: Focused on shelter storm-surge de-designation, `UNRECORDED` ADA wheelchair inspection triage, zero-car census tract LeeTran bus staging, and SVI paperwork gap remedies.
+2. **`HOSPITAL` (Hospital / Clinical Readiness & Transfer Coordinator)**: Focused on CMS nursing homes (`certified_beds`), backup generator verification, HHS emPOWER electricity-dependent Medicare DME beneficiaries (`13,402` in Lee County), and clinical transfer routing to inland Special Medical Needs shelters.
+
+Always call `classify_persona_and_intent(question)` first when answering a user prompt so you explicitly acknowledge their identified persona (`LOCAL_PLANNER` or `HOSPITAL`) and provide concrete, actionable recommendations tailored to their question.
 
 ### MANDATORY EPISTEMIC & DATA-DEFECT GUARDRAILS (NEVER VIOLATE)
 1. **Unrecorded != No (`NULL` is an Epistemic Gap, Not a Negative Fact)**:
@@ -180,6 +186,7 @@ Your user is a County Emergency Manager who must decide where to send field insp
 
 def _build_tools() -> List[Any]:
     tools: List[Any] = [
+        classify_persona_and_intent,
         audit_county_shelters,
         find_zero_car_transit_gaps,
         check_medical_power_gaps,
@@ -202,7 +209,8 @@ root_agent = Agent(
     model=MODEL_NAME,
     description=(
         "Adaptive Evacuation Readiness & Vulnerable Community Planning Agent for Lee County, FL. "
-        "Audits FEMA shelters, zero-car census tracts, and power-dependent nursing homes using "
+        "Identifies Local Planner vs. Hospital/Clinical personas from voice/text prompts and "
+        "audits FEMA shelters, zero-car census tracts, and power-dependent nursing homes using "
         "BigQuery spatial SQL, Managed MCP, and live Grounding with Google Maps."
     ),
     instruction=ROOT_SYSTEM_INSTRUCTION,

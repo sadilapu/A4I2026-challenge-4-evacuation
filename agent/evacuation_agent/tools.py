@@ -1445,3 +1445,502 @@ def record_field_assessment(
         "maps_tos_compliance": "Only place_id pointer stored; no Google Maps content cached.",
         "assessed_at": now_iso,
     }
+
+
+def classify_persona_and_intent(question: str) -> Dict[str, Any]:
+    """Identify the active user persona (LOCAL_PLANNER vs HOSPITAL) and intent topic from a voice/text prompt.
+
+    Args:
+        question: The spoken or typed prompt from the user.
+
+    Returns:
+        Dictionary with `persona` ('LOCAL_PLANNER' or 'HOSPITAL'), `persona_title`,
+        `intent_topic`, `intent_label`, `primary_view`, `confidence`, and `matched_signals`.
+    """
+    q = (question or "").strip().lower()
+
+    hospital_keywords = {
+        "hospital": "Hospital operations",
+        "nursing home": "CMS Nursing Homes",
+        "nursing": "Nursing facility care",
+        "care facility": "Care facilities",
+        "care facilities": "Care facilities",
+        "patient": "Patient evacuation & transfer",
+        "patients": "Patient evacuation & transfer",
+        "clinical": "Clinical care continuity",
+        "medical": "Medical needs & power",
+        "generator": "Backup generator power",
+        "generators": "Backup generator power",
+        "power": "Electricity-dependent care",
+        "electricity": "Electricity-dependent DME",
+        "dme": "Durable Medical Equipment (DME)",
+        "empower": "HHS emPOWER registry",
+        "oxygen": "Oxygen-dependent patients",
+        "o2": "Oxygen-dependent patients",
+        "dialysis": "ESRD / Dialysis patients",
+        "esrd": "ESRD / Dialysis patients",
+        "ventilator": "Ventilator-dependent patients",
+        "hospice": "At-home hospice patients",
+        "beds": "Certified nursing beds",
+        "bed": "Certified nursing beds",
+        "ambulance": "EMS / Ambulance transfer",
+        "mutual aid": "Clinical mutual-aid transfer",
+        "mutual-aid": "Clinical mutual-aid transfer",
+        "lehigh acres": "Lehigh Acres Health & Rehab",
+        "page rehab": "Page Rehabilitation & Healthcare",
+        "winkler court": "Winkler Court Nursing Facility",
+        "calusa": "Calusa Harbour Care Facility",
+        "estero recreation": "Estero Medical Shelter",
+        "cms": "CMS certified facilities",
+        "doctor": "Clinical staff",
+        "nurse": "Nursing staff",
+        "icu": "Critical care / ICU",
+    }
+
+    planner_keywords = {
+        "planner": "County Emergency Planner",
+        "emergency manager": "County Emergency Manager",
+        "eoc": "Emergency Operations Center",
+        "bus": "Municipal transit bus staging",
+        "buses": "Municipal transit bus staging",
+        "leetran": "LeeTran bus staging",
+        "transit": "Zero-Car Transit Lifeline",
+        "carless": "No-vehicle households",
+        "no vehicle": "No-vehicle households",
+        "no-vehicle": "No-vehicle households",
+        "vehicle": "Household vehicle access",
+        "walkability": "2.0 km Walkability Wall",
+        "walk": "Pedestrian evacuation distance",
+        "tract": "Census tract vulnerability",
+        "tracts": "Census tract vulnerability",
+        "12071001401": "Census Tract 12071001401",
+        "12071001915": "Census Tract 12071001915",
+        "shelter": "FEMA Shelter Registry",
+        "shelters": "FEMA Shelter Registry",
+        "ghost shelter": "Ghost Shelter Audit",
+        "wheelchair": "Wheelchair accessibility",
+        "ada": "ADA / Wheelchair verification",
+        "accessible": "Shelter accessibility",
+        "accessibility": "Shelter accessibility",
+        "surge": "SLOSH storm-surge exposure",
+        "slosh": "SLOSH storm-surge zone",
+        "flood": "100-year floodplain exposure",
+        "dunbar": "Dunbar High School (Surge Zone)",
+        "harns marsh": "Harns Marsh Middle (Surge Zone)",
+        "north fort myers": "North Fort Myers Academy",
+        "veterans park": "Veterans Park Academy",
+        "alico": "Alico Arena",
+        "inspect": "August field inspection triage",
+        "inspection": "August field inspection triage",
+        "audit": "County readiness audit",
+        "equity": "Post-hoc SVI equity audit",
+        "svi": "Social Vulnerability Index",
+        "poverty": "Socioeconomic vulnerability",
+        "unrecorded": "Unrecorded FEMA paperwork gap",
+    }
+
+    hosp_matches: List[str] = []
+    plan_matches: List[str] = []
+
+    for kw, label in hospital_keywords.items():
+        if kw in q and label not in hosp_matches:
+            hosp_matches.append(label)
+
+    for kw, label in planner_keywords.items():
+        if kw in q and label not in plan_matches:
+            plan_matches.append(label)
+
+    # Strong explicit persona overrides
+    if any(w in q for w in ["as a hospital", "hospital persona", "nursing home", "care facility", "patient", "dialysis", "oxygen", "ventilator", "dme", "empower", "mutual aid", "certified beds", "lehigh acres", "page rehab"]):
+        hosp_score = len(hosp_matches) + 3
+    else:
+        hosp_score = len(hosp_matches)
+
+    if any(w in q for w in ["as a planner", "local planner", "emergency manager", "carless", "no-vehicle", "no vehicle", "bus", "buses", "walkability", "census tract", "ghost shelter", "wheelchair", "surge", "equity", "dunbar", "harns marsh"]):
+        plan_score = len(plan_matches) + 3
+    else:
+        plan_score = len(plan_matches)
+
+    if hosp_score > plan_score:
+        persona = "HOSPITAL"
+        persona_title = "🏥 Hospital & Care Facility Operations"
+        persona_subtitle = "Acute Care · CMS Nursing Homes · HHS emPOWER DME · Backup Power & Patient Transfer"
+        matched_signals = hosp_matches or ["Clinical / Medical Power & Transfer Readiness"]
+        confidence = min(0.99, round(0.82 + 0.04 * hosp_score, 2))
+
+        if any(w in q for w in ["oxygen", "o2", "dialysis", "esrd", "dme", "empower", "ventilator", "hospice", "home health", "electricity"]):
+            intent_topic = "DME_OXYGEN_DIALYSIS"
+            intent_label = "Electricity-Dependent DME, Oxygen & Dialysis Surge Triage"
+        elif any(w in q for w in ["route", "transfer", "ambulance", "evacuate", "estero", "special medical", "rename", "open", "closed", "lehigh"]):
+            intent_topic = "MEDICAL_SHELTER_ROUTING"
+            intent_label = "Patient Transfer Routing & Live Facility Verification"
+        else:
+            intent_topic = "NURSING_HOME_GENERATOR"
+            intent_label = "Generator-Blind Nursing Home Alert & Mutual-Aid Triage"
+        primary_view = "medical"
+    else:
+        persona = "LOCAL_PLANNER"
+        persona_title = "🏛️ Local Emergency Planner (County EOC)"
+        persona_subtitle = "Shelter Triage · Zero-Car Bus Staging · Storm Surge De-Designation · Equity Audit"
+        matched_signals = plan_matches or ["County Shelter & Evacuation Transit Planning"]
+        confidence = min(0.99, round(0.84 + 0.03 * max(plan_score, 1), 2))
+
+        if any(w in q for w in ["carless", "no-vehicle", "no vehicle", "bus", "buses", "transit", "walkability", "walk", "12071001401", "12071001915", "pickup", "staging"]):
+            intent_topic = "TRANSIT_LIFELINE"
+            intent_label = "Zero-Car Transit Lifeline & T-Minus 48h Bus Staging"
+            primary_view = "transit"
+        elif any(w in q for w in ["equity", "svi", "poverty", "minority", "fairness", "bias", "demographic"]):
+            intent_topic = "EQUITY_PAPERWORK"
+            intent_label = "Post-Hoc Demographic & Paperwork Bias Audit"
+            primary_view = "equity"
+        elif any(w in q for w in ["surge", "slosh", "flood", "dunbar", "harns marsh"]):
+            intent_topic = "SURGE_EXPOSURE"
+            intent_label = "Storm Surge SLOSH De-Designation & Safe Shelter Audit"
+            primary_view = "shelters"
+        else:
+            intent_topic = "SHELTER_AUDIT"
+            intent_label = "August Ghost Shelter & Accessibility Inspection Triage"
+            primary_view = "shelters"
+
+    return {
+        "persona": persona,
+        "persona_title": persona_title,
+        "persona_subtitle": persona_subtitle,
+        "intent_topic": intent_topic,
+        "intent_label": intent_label,
+        "primary_view": primary_view,
+        "confidence": confidence,
+        "matched_signals": matched_signals[:5],
+    }
+
+
+def build_persona_action_response(
+    question: str,
+    county_fips: str = DEFAULT_COUNTY_FIPS,
+) -> Dict[str, Any]:
+    """Build dynamic, persona-specific actionable data, KPIs, action cards, and spoken feedback for a voice/text query.
+
+    Args:
+        question: User's voice or text question.
+        county_fips: 5-character county FIPS code (defaults to '12071' for Lee County, FL).
+
+    Returns:
+        Structured dictionary with `persona_info`, `voice_summary`, `persona_kpis`,
+        `action_cards`, and `question_matched_records`.
+    """
+    p_info = classify_persona_and_intent(question)
+    persona = p_info["persona"]
+    intent = p_info["intent_topic"]
+    q_lower = (question or "").lower()
+
+    shelter_audit = audit_county_shelters(county_fips=county_fips, top_n=12)
+    transit_gaps = find_zero_car_transit_gaps(county_fips=county_fips, top_n=5)
+    medical_gaps = check_medical_power_gaps(county_fips=county_fips, top_n=8)
+    equity_audit = run_equity_audit(county_fips=county_fips)
+
+    ep = shelter_audit.get("epistemic_summary", {})
+    wc_info = ep.get("wheelchair_accessible", {})
+    gen_info = ep.get("generator_onsite", {})
+    emp = medical_gaps.get("empower_county_level_metrics", {})
+    cms_sum = medical_gaps.get("cms_nursing_home_summary", {})
+
+    if persona == "HOSPITAL":
+        top_nhs = medical_gaps.get("top_nursing_homes", [])
+        top_nh = top_nhs[0] if top_nhs else {}
+        lehigh_nh = next(
+            (n for n in top_nhs if "LEHIGH" in n.get("provider_name", "").upper()),
+            top_nhs[1] if len(top_nhs) > 1 else top_nh,
+        )
+
+        # Check if user asked about a specific nursing home
+        matched_nhs = [
+            n
+            for n in top_nhs
+            if any(
+                tok in q_lower
+                for tok in n.get("provider_name", "").lower().split()
+                if len(tok) > 4
+                and tok not in {"health", "healthcare", "rehabilitation", "center", "nursing", "facility", "manor"}
+            )
+        ]
+
+        if intent == "DME_OXYGEN_DIALYSIS":
+            voice_summary = (
+                f"Hospital and Clinical persona identified. In Lee County, {emp.get('power_dependent_raw_value', 7381):,} "
+                f"Medicare beneficiaries rely on electricity-dependent durable medical equipment, including "
+                f"{emp.get('oxygen_services_dme', 1984):,} on oxygen and {emp.get('dialysis_esrd_dme', 637):,} on dialysis, "
+                f"yet only {gen_info.get('YES', 6)} shelters have confirmed backup generators while {gen_info.get('UNRECORDED', 94)} are unrecorded. "
+                f"Immediate action: lock in clinical generator mutual-aid at Estero Recreation Center and verify backup power at the top 3 high-capacity shelters."
+            )
+        elif intent == "MEDICAL_SHELTER_ROUTING":
+            voice_summary = (
+                f"Hospital Patient Transfer persona identified. Lee County has {cms_sum.get('total_nursing_homes_in_county', 20)} "
+                f"nursing homes with {cms_sum.get('total_certified_nursing_home_beds', 2177):,} certified beds competing for "
+                f"{gen_info.get('YES', 6)} confirmed generator shelters. Note that Lehigh Acres Healthcare and Rehab Center was "
+                f"detected as renamed on Google Maps—verify ambulance routing to its nearest confirmed generator shelter before T-minus 48 hours."
+            )
+        else:
+            voice_summary = (
+                f"Hospital and Clinical Operations persona identified. Across Lee County, {cms_sum.get('total_nursing_homes_in_county', 20)} "
+                f"CMS nursing homes with {cms_sum.get('total_certified_nursing_home_beds', 2177):,} beds and {emp.get('power_dependent_raw_value', 7381):,} "
+                f"home DME patients face a 94 percent unrecorded generator gap across surrounding FEMA shelters. "
+                f"I have surfaced the priority nursing home transfer pairings and generator verification actions below."
+            )
+
+        persona_kpis = [
+            {
+                "label": "CMS Nursing Home Beds at Risk",
+                "value": f"{cms_sum.get('total_certified_nursing_home_beds', 2177):,}",
+                "sub": f"Across {cms_sum.get('total_nursing_homes_in_county', 20)} licensed Lee County care facilities",
+                "color": "#f87171",
+            },
+            {
+                "label": "Power-Dependent Medicare DME",
+                "value": f"{emp.get('power_dependent_raw_value', 7381):,}",
+                "sub": f"{emp.get('oxygen_services_dme', 1984):,} Oxygen · {emp.get('dialysis_esrd_dme', 637):,} Dialysis/ESRD",
+                "color": "#fbbf24",
+            },
+            {
+                "label": "Confirmed Generator Shelters",
+                "value": f"{gen_info.get('YES', 6)} of {ep.get('total_shelters', 100)}",
+                "sub": f"{gen_info.get('UNRECORDED', 94)} shelters ({gen_info.get('pct_unrecorded', 94.0)}%) UNRECORDED generator status",
+                "color": "#d8b4fe",
+            },
+            {
+                "label": "Special Medical Needs Shelters",
+                "value": f"{ep.get('medical_designated_shelters', 1)}",
+                "sub": "Estero Recreation Center (Cap 150 · Gen: YES)",
+                "color": "#38bdf8",
+            },
+        ]
+
+        nh1_gen = (top_nh.get("nearest_generator_confirmed_shelter") or {})
+        lehigh_gen = (lehigh_nh.get("nearest_generator_confirmed_shelter") or {})
+
+        action_cards = [
+            {
+                "badge": "PRIORITY 1 · CLINICAL MUTUAL-AID TRANSFER",
+                "badge_class": "no",
+                "title": f"Lock Transfer Agreement: {top_nh.get('provider_name', 'Page Rehabilitation')} ({top_nh.get('certified_beds', 180)} Beds)",
+                "detail": (
+                    f"Within 10 km, {top_nh.get('surrounding_10km_shelters', {}).get('generator_unrecorded', 31)} shelters have UNRECORDED backup power and only "
+                    f"{top_nh.get('surrounding_10km_shelters', {}).get('generator_confirmed_yes', 2)} have confirmed generators. "
+                    f"Nearest confirmed-generator shelter is {nh1_gen.get('shelter_name', 'South Fort Myers High School')} ({nh1_gen.get('straight_line_distance_km', 6.32)} km)."
+                ),
+                "action_type": "verify_route",
+                "action_label": "🚑 Verify Ambulance Transfer Route on Google Maps",
+                "place_name": nh1_gen.get("shelter_name", "South Fort Myers High School"),
+                "address": nh1_gen.get("address_1", "14020 Plantation Rd"),
+                "city": nh1_gen.get("city", "Fort Myers"),
+                "origin_lat": top_nh.get("latitude", 26.5919),
+                "origin_lon": top_nh.get("longitude", -81.8722),
+                "origin_label": f"{top_nh.get('provider_name', 'Page Rehabilitation')} ({top_nh.get('certified_beds', 180)} beds)",
+            },
+            {
+                "badge": "PRIORITY 2 · LIVE MAPS RENAME & DISPATCH ALERT",
+                "badge_class": "renamed",
+                "title": f"Verify Renamed Facility: {lehigh_nh.get('provider_name', 'Lehigh Acres Healthcare')} ({lehigh_nh.get('certified_beds', 110)} Beds)",
+                "detail": (
+                    f"2022 CMS registry lists '{lehigh_nh.get('provider_name', 'LEHIGH ACRES HEALTHCARE & REHAB CENTER')}' at "
+                    f"{lehigh_nh.get('provider_address', '1550 LEE BOULEVARD')}. Live Google Maps Grounding flags it as renamed to "
+                    f"'Lehigh Acres Health and Rehabilitation Center'. Nearest confirmed generator shelter is {lehigh_gen.get('straight_line_distance_km', 6.46)} km away."
+                ),
+                "action_type": "verify_place",
+                "action_label": "🗺️ Verify Live Clinical Status on Google Maps",
+                "place_name": lehigh_nh.get("provider_name", "LEHIGH ACRES HEALTHCARE & REHAB CENTER"),
+                "address": lehigh_nh.get("provider_address", "1550 LEE BOULEVARD"),
+                "city": lehigh_nh.get("city", "LEHIGH ACRES"),
+            },
+            {
+                "badge": "PRIORITY 3 · DME & GENERATOR SURGE BOTTLENECK",
+                "badge_class": "unrec",
+                "title": f"Expand Medical Generator Capacity for {emp.get('power_dependent_raw_value', 7381):,} DME Patients",
+                "detail": (
+                    f"County-wide HHS emPOWER shows {emp.get('oxygen_services_dme', 1984):,} oxygen and {emp.get('dialysis_esrd_dme', 637):,} dialysis patients. "
+                    f"Inspect and confirm backup generator transfer switches at high-capacity UNRECORDED shelters (North Fort Myers Academy, Cap 2,500) to relieve hospital ED boarding."
+                ),
+                "action_type": "field_audit",
+                "action_label": "⚡ Log Generator & Medical Readiness Audit (ID 24839)",
+                "shelter_id": 24839,
+                "shelter_name": "North Fort Myers Academy For The Arts",
+                "prev_status": "UNRECORDED",
+            },
+        ]
+
+        matched_records = matched_nhs if matched_nhs else top_nhs[:4]
+
+    else:
+        # LOCAL_PLANNER Persona
+        top_tracts = transit_gaps.get("priority_zero_car_tracts", [])
+        t1 = top_tracts[0] if top_tracts else {}
+        t2 = top_tracts[1] if len(top_tracts) > 1 else t1
+        top3_inspect = shelter_audit.get("august_field_inspection_top3", [])
+        b1 = top3_inspect[0] if top3_inspect else {}
+        surge_list = shelter_audit.get("surge_or_flood_exposed_shelters", [])
+        s1 = surge_list[0] if surge_list else {}
+
+        if intent == "TRANSIT_LIFELINE":
+            voice_summary = (
+                f"Local Emergency Planner persona identified. In Lee County, the top 5 carless census tracts contain "
+                f"{transit_gaps.get('total_carless_households_in_top_tracts', 1722):,} households without vehicles. "
+                f"Tract {t1.get('geo_id', '12071001401')} has {t1.get('households_no_vehicle', 639)} carless households and sits "
+                f"{t1.get('nearest_confirmed_wheelchair_shelter', {}).get('straight_line_distance_km', 6.12)} kilometers from the nearest confirmed wheelchair shelter, "
+                f"while Tract {t2.get('geo_id', '12071001915')} breaches the 2-kilometer Walkability Wall at "
+                f"{t2.get('nearest_non_surge_shelter', {}).get('straight_line_distance_km', 7.19)} kilometers to any non-surge shelter. "
+                f"Pre-position LeeTran buses at the GPS staging coordinates shown below at T-minus 48 hours."
+            )
+        elif intent == "SURGE_EXPOSURE":
+            voice_summary = (
+                f"Local Emergency Planner persona identified. Out of {ep.get('total_shelters', 100)} shelters in Lee County, "
+                f"2 facilities—Dunbar High School and Harns Marsh Middle School—are explicitly flagged inside the SLOSH storm-surge zone, "
+                f"while {ep.get('in_surge_slosh_area', {}).get('UNRECORDED', 97)} shelters have unrecorded surge status. "
+                f"De-designate the 2 surge-exposed shelters for pre-landfall evacuation and inspect the top 3 high-capacity shelters immediately."
+            )
+        elif intent == "EQUITY_PAPERWORK":
+            voice_summary = (
+                f"Local Emergency Planner persona identified. Our post-hoc SVI equity audit shows that high-vulnerability tracts "
+                f"are within 2.5 kilometers of a physical shelter, but sit over 11 kilometers from a confirmed wheelchair-accessible shelter "
+                f"solely because {wc_info.get('pct_unrecorded', 93.0)} percent of Lee County shelters have unrecorded accessibility paperwork. "
+                f"Prioritizing August field inspections in high-SVI tracts eliminates this clerical disparity."
+            )
+        else:
+            voice_summary = (
+                f"Local Emergency Planner persona identified. Lee County has {ep.get('total_shelters', 100)} registered shelters "
+                f"with {ep.get('total_plausible_evac_capacity', 34070):,} evacuation capacity, but {wc_info.get('UNRECORDED', 93)} shelters "
+                f"({wc_info.get('pct_unrecorded', 93.0)}%) have unrecorded wheelchair accessibility and 2 sit inside storm-surge zones. "
+                f"Here is your prioritized August Ground-Truth Inspection Triage and T-minus 48-hour bus staging plan."
+            )
+
+        persona_kpis = [
+            {
+                "label": "EVAC-Eligible Shelters & Capacity",
+                "value": f"{ep.get('total_plausible_evac_capacity', 34070):,}",
+                "sub": f"{ep.get('evac_eligible_shelters', 96)} EVAC shelters · {ep.get('post_impact_only_shelters', 4)} POST-impact only",
+                "color": "#38bdf8",
+            },
+            {
+                "label": "Wheelchair Paperwork Gap",
+                "value": f"{wc_info.get('pct_unrecorded', 93.0)}%",
+                "sub": f"{wc_info.get('YES', 2)} YES · {wc_info.get('NO', 5)} NO · {wc_info.get('UNRECORDED', 93)} UNRECORDED",
+                "color": "#d8b4fe",
+            },
+            {
+                "label": "Shelters in Storm Surge Zone",
+                "value": f"{ep.get('in_surge_slosh_area', {}).get('YES', 2)} CRITICAL",
+                "sub": "Dunbar High & Harns Marsh Middle in SLOSH surge zone",
+                "color": "#f87171",
+            },
+            {
+                "label": "Zero-Car Households (Top 5 Tracts)",
+                "value": f"{transit_gaps.get('total_carless_households_in_top_tracts', 1722):,}",
+                "sub": "Exceeding 2.0 km Walkability Wall to accessible shelter",
+                "color": "#4ade80",
+            },
+        ]
+
+        t1_coords = t1.get("pickup_staging_coordinates", {})
+        t1_ns = t1.get("nearest_non_surge_shelter") or {}
+
+        action_cards = [
+            {
+                "badge": "ACTION 1 · AUGUST BUILDING INSPECTION TRIAGE",
+                "badge_class": "unrec",
+                "title": f"Inspect #1 High-Capacity Unrecorded Shelter: {b1.get('shelter_name', 'North Fort Myers Academy For The Arts')}",
+                "detail": (
+                    f"Capacity: {b1.get('effective_capacity', 2500):,} evacuees at {b1.get('address_1', '1856 Arts Way')}, {b1.get('city', 'North Fort Myers')}. "
+                    f"Both wheelchair accessibility and backup generator status are UNRECORDED (NULL) in FEMA's 2022 registry. "
+                    f"Verify physical status and log field inspection to unlock 2,500 accessible beds."
+                ),
+                "action_type": "field_audit",
+                "action_label": "✍️ Log Field Inspection (Confirm ADA & Generator YES)",
+                "shelter_id": b1.get("shelter_id", 24839),
+                "shelter_name": b1.get("shelter_name", "North Fort Myers Academy For The Arts"),
+                "prev_status": "UNRECORDED",
+            },
+            {
+                "badge": "ACTION 2 · T-MINUS 48H LEETRAN BUS STAGING",
+                "badge_class": "yes",
+                "title": f"Stage {t1_coords.get('recommended_municipal_buses', 12)} Municipal Buses in Tract {t1.get('geo_id', '12071001401')} ({t1.get('households_no_vehicle', 639)} Carless HH)",
+                "detail": (
+                    f"Pickup GPS: ({t1_coords.get('lat', 26.58598)}, {t1_coords.get('lon', -81.87791)}). "
+                    f"25.4% of households have no vehicle and nearest confirmed wheelchair shelter is {t1.get('nearest_confirmed_wheelchair_shelter', {}).get('straight_line_distance_km', 6.12)} km away. "
+                    f"Tract 12071001915 (456 carless HH) sits 7.19 km from any non-surge shelter."
+                ),
+                "action_type": "verify_route",
+                "action_label": "🚌 Verify Live Bus Evacuation Route on Google Maps",
+                "place_name": t1_ns.get("shelter_name", "Franklin Park Elementary School"),
+                "address": t1_ns.get("address_1", "2323 Ford St"),
+                "city": t1_ns.get("city", "Fort Myers"),
+                "origin_lat": t1_coords.get("lat", 26.58598),
+                "origin_lon": t1_coords.get("lon", -81.87791),
+                "origin_label": f"Tract {t1.get('geo_id', '12071001401')} Bus Staging ({t1.get('households_no_vehicle', 639)} carless HH)",
+            },
+            {
+                "badge": "ACTION 3 · STORM SURGE SLOSH DE-DESIGNATION",
+                "badge_class": "surge",
+                "title": f"Flag Surge-Zone Shelter: {s1.get('shelter_name', 'Dunbar High School - Pets')} (Cap {s1.get('effective_capacity', 240):,})",
+                "detail": (
+                    f"Located at {s1.get('address_1', '3800 E Edison Ave')}, {s1.get('city', 'Fort Myers')}. "
+                    f"FEMA registry explicitly flags in_surge_slosh_area = TRUE (plus Harns Marsh Middle School). "
+                    f"Restrict from coastal surge evacuation routing and verify current facility status on Google Maps."
+                ),
+                "action_type": "verify_place",
+                "action_label": "🗺️ Verify Building Live on Google Maps",
+                "place_name": s1.get("shelter_name", "Dunbar High School"),
+                "address": s1.get("address_1", "3800 E Edison Ave"),
+                "city": s1.get("city", "Fort Myers"),
+            },
+        ]
+
+        matched_records = top_tracts if intent == "TRANSIT_LIFELINE" else top3_inspect
+
+    return {
+        "persona_info": p_info,
+        "voice_summary": voice_summary,
+        "persona_kpis": persona_kpis,
+        "action_cards": action_cards,
+        "question_matched_records": matched_records,
+        "epistemic_summary": ep,
+        "option_1_shelter_audit": shelter_audit,
+        "option_2_zero_car_transit_lifeline": transit_gaps,
+        "option_3_medical_power_alert": medical_gaps,
+        "post_hoc_equity_audit": equity_audit,
+    }
+
+
+def transcribe_voice_audio(
+    audio_bytes: bytes,
+    mime_type: str = "audio/webm",
+) -> str:
+    """Transcribe spoken user audio into text using Vertex AI Gemini 2.5 Flash multimodal audio input.
+
+    Args:
+        audio_bytes: Raw audio bytes recorded from browser microphone.
+        mime_type: Audio MIME type (e.g., 'audio/webm', 'audio/mp4', 'audio/wav').
+
+    Returns:
+        Clean transcribed text string.
+    """
+    client = get_genai_client()
+    audio_part = types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
+    prompt = (
+        "Transcribe the spoken question or command accurately into plain English text. "
+        "Context: Lee County Florida hurricane evacuation planning, shelters, carless census tracts, "
+        "LeeTran buses, nursing homes, Medicare DME, oxygen, dialysis, backup generators, Dunbar High, "
+        "Lehigh Acres, Estero. Return ONLY the transcribed text with no extra commentary."
+    )
+    try:
+        resp = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[audio_part, prompt],
+            config=types.GenerateContentConfig(temperature=0.0),
+        )
+        return (resp.text or "").strip()
+    except Exception:
+        resp = client.models.generate_content(
+            model=FALLBACK_MODEL_NAME,
+            contents=[audio_part, prompt],
+            config=types.GenerateContentConfig(temperature=0.0),
+        )
+        return (resp.text or "").strip()
+

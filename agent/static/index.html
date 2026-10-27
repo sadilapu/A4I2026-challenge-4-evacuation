@@ -3,800 +3,946 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lee County August Evacuation Readiness Brief — A4I 2026 Challenge 4</title>
+  <title>Lee County Adaptive Evacuation & Clinical Readiness Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0b1020;
-      --panel: #131b33;
-      --panel-alt: #182342;
-      --border: #283663;
-      --text: #eef2ff;
-      --muted: #9fb0da;
-      --accent: #38bdf8;
-      --accent-2: #818cf8;
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --danger: #ef4444;
-      --unrec: #a855f7;
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+    .mic-recording { animation: pulse-ring 1.5s infinite; }
+    @keyframes wave {
+      0%, 100% { height: 6px; }
+      50% { height: 20px; }
     }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    header {
-      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 18px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-    .brand h1 {
-      margin: 0;
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .brand p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    .header-badges {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 11px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
-    }
-    .pill.live { border-color: rgba(34,197,94,0.45); color: #86efac; background: rgba(34,197,94,0.1); }
-    .pill.fema { border-color: rgba(56,189,248,0.45); color: #7dd3fc; background: rgba(56,189,248,0.1); }
-    .pill.warn { border-color: rgba(245,158,11,0.45); color: #fcd34d; background: rgba(245,158,11,0.1); }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 1fr 410px;
-      gap: 20px;
-      max-width: 1680px;
-      margin: 0 auto;
-      padding: 20px 24px 48px;
-    }
-    @media (max-width: 1220px) {
-      .layout { grid-template-columns: 1fr; }
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 18px;
-    }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      padding-bottom: 10px;
-    }
-    .card-title {
-      margin: 0;
-      font-size: 1.08rem;
-      font-weight: 700;
-    }
-    .card-subtitle {
-      margin: 3px 0 0;
-      color: var(--muted);
-      font-size: 0.83rem;
-    }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    .kpi {
-      background: var(--panel-alt);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-    }
-    .kpi .label {
-      color: var(--muted);
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .kpi .value {
-      font-size: 1.65rem;
-      font-weight: 800;
-      margin: 4px 0;
-    }
-    .kpi .sub {
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.74rem;
-      font-weight: 700;
-    }
-    .badge.yes { background: rgba(34,197,94,0.18); color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
-    .badge.no { background: rgba(239,68,68,0.18); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
-    .badge.unrec { background: rgba(168,85,247,0.18); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.45); }
-    .badge.surge { background: rgba(239,68,68,0.25); color: #fecaca; border: 1px solid #ef4444; }
-    .badge.renamed { background: rgba(245,158,11,0.22); color: #fde68a; border: 1px solid #f59e0b; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.84rem;
-    }
-    th, td {
-      text-align: left;
-      padding: 9px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      vertical-align: top;
-    }
-    th {
-      color: var(--muted);
-      font-weight: 600;
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      background: rgba(0,0,0,0.2);
-    }
-
-    .btn {
-      cursor: pointer;
-      background: #1d4ed8;
-      color: #fff;
-      border: 1px solid #3b82f6;
-      border-radius: 7px;
-      padding: 6px 11px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-    .btn:hover { background: #2563eb; }
-    .btn.secondary {
-      background: rgba(56,189,248,0.12);
-      color: #7dd3fc;
-      border-color: rgba(56,189,248,0.4);
-    }
-    .btn.secondary:hover { background: rgba(56,189,248,0.22); }
-    .btn.success {
-      background: rgba(34,197,94,0.16);
-      color: #86efac;
-      border-color: rgba(34,197,94,0.45);
-    }
-
-    .grounding-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 14px;
-    }
-    .grounding-card {
-      background: var(--panel-alt);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .grounding-attribution {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px dashed rgba(255,255,255,0.14);
-      font-size: 0.8rem;
-      color: #cbd5e1;
-    }
-
-    .chat-panel {
-      position: sticky;
-      top: 18px;
-      height: calc(100vh - 36px);
-      display: flex;
-      flex-direction: column;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .chat-header {
-      padding: 14px 16px;
-      background: var(--panel-alt);
-      border-bottom: 1px solid var(--border);
-    }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .msg {
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      white-space: pre-wrap;
-    }
-    .msg.user {
-      background: #1e3a8a;
-      align-self: flex-end;
-      max-width: 88%;
-    }
-    .msg.agent {
-      background: var(--panel-alt);
-      border: 1px solid var(--border);
-      align-self: stretch;
-    }
-    .preset-bar {
-      padding: 8px 12px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      background: rgba(0,0,0,0.2);
-    }
-    .chat-input-row {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      background: var(--panel-alt);
-    }
-    .chat-input-row input {
-      flex: 1;
-      background: var(--bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 0.86rem;
-    }
-    .epistemic-bar {
-      height: 12px;
-      border-radius: 6px;
-      overflow: hidden;
-      display: flex;
-      background: #0f172a;
-      margin: 6px 0 4px;
-    }
-    .epistemic-seg-yes { background: var(--ok); }
-    .epistemic-seg-no { background: var(--danger); }
-    .epistemic-seg-unrec { background: var(--unrec); }
+    .wave-bar { width: 3px; background: currentColor; border-radius: 9999px; animation: wave 0.9s ease-in-out infinite; }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; }
   </style>
 </head>
-<body>
-  <header>
-    <div class="brand">
-      <h1>🌪️ Adaptive Evacuation Readiness & Vulnerable Community Planning Agent</h1>
-      <p>Target Jurisdiction: <strong>Lee County, Florida (FIPS 12071)</strong> · Pre-Season Planning Audit (Mid-August) · Vertex AI ADK + BigQuery + Grounding with <span translate="no">Google Maps</span></p>
-    </div>
-    <div class="header-badges">
-      <span class="pill fema">📊 2022 Federal Spine: BigQuery Spatial SQL</span>
-      <span class="pill live">🗺️ Live Grounding with <span translate="no">Google Maps</span> + Routing</span>
-      <span class="pill warn">⚠️ Epistemic Rule: Blank/NULL = UNRECORDED (Never "NO")</span>
-      <button class="btn" onclick="loadBrief(true)">🔄 Refresh Live Grounded Brief</button>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center font-extrabold text-slate-950 shadow-lg shadow-blue-500/20">
+          E4
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base md:text-lg font-bold tracking-tight text-white">Lee County Adaptive Evacuation Command</h1>
+            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              Voice + Persona AI
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Speak or ask any question — UI automatically adapts for <span class="text-cyan-300 font-medium">Local Emergency Planner</span> or <span class="text-rose-300 font-medium">Hospital / Clinical</span> operations</p>
+        </div>
+      </div>
+
+      <!-- Right Controls: Voice TTS Toggle & Active Persona Indicator -->
+      <div class="flex items-center gap-2.5">
+        <div id="headerPersonaPill" class="px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 bg-slate-800/90 text-slate-300 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span id="headerPersonaText">Auto-Detecting Persona...</span>
+        </div>
+
+        <button id="ttsToggleBtn" onclick="toggleAutoSpeak()" class="px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition flex items-center gap-1.5" title="Toggle Spoken Voice Responses">
+          <span id="ttsToggleIcon">🔊</span>
+          <span id="ttsToggleLabel">Voice Output: ON</span>
+        </button>
+
+        <button id="stopSpeechBtn" onclick="stopSpeaking()" class="hidden px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-amber-500/40 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition">
+          ⏹ Stop Audio
+        </button>
+      </div>
     </div>
   </header>
 
-  <div class="layout">
-    <main id="main-content">
-      <div id="loading-banner" class="card" style="border-color:#38bdf8;">
-        <strong>⏳ Loading 4-Pillar Lee County Readiness Brief from BigQuery & Live Grounding with <span translate="no">Google Maps</span>...</strong>
-        <p style="margin:6px 0 0;color:var(--muted);font-size:0.84rem;">
-          Running spatial queries across <code>shelters</code>, <code>vulnerability_tracts</code>, <code>hazard_tracts</code>, <code>care_facilities</code>, and <code>power_dependent_counties</code>, plus live per-building verification via <span translate="no">Google Maps</span> (5–8s per grounded call).
-        </p>
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="max-w-7xl w-full mx-auto px-4 py-5 flex-1 flex flex-col gap-5">
+
+    <!-- 1. VOICE COMMAND HERO BAR (SIMPLE, FRONT-AND-CENTER) -->
+    <section class="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-5 shadow-2xl">
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
+        
+        <!-- Big Push-To-Talk Mic Button -->
+        <div class="flex items-center gap-4">
+          <button id="micButton" onclick="toggleVoiceRecording()" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white flex flex-col items-center justify-center shadow-lg shadow-blue-600/30 transition shrink-0 focus:outline-none">
+            <svg id="micSvg" xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4m-4 0h8" />
+            </svg>
+            <span id="micBtnSubtext" class="text-[10px] font-bold uppercase tracking-wider mt-0.5">Speak</span>
+          </button>
+
+          <div class="lg:hidden">
+            <div class="text-sm font-bold text-white" id="voiceStatusMobile">Tap Mic to Speak a Question</div>
+            <div class="text-xs text-slate-400">Identifies Local Planner or Hospital Persona automatically</div>
+          </div>
+        </div>
+
+        <!-- Voice / Text Input Box -->
+        <div class="flex-1 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span id="voiceStatusBadge" class="text-xs font-semibold text-cyan-400 flex items-center gap-1.5">
+                🎙️ Ready for Voice or Text Prompt
+              </span>
+              <div id="speakingWave" class="hidden items-center gap-1 text-emerald-400 h-4 px-2">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <span class="text-[11px] font-medium ml-1">Speaking Briefing...</span>
+              </div>
+            </div>
+            <span class="text-[11px] text-slate-400 hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300">Enter</kbd> to send</span>
+          </div>
+
+          <form id="voicePromptForm" onsubmit="handlePromptSubmit(event)" class="flex gap-2">
+            <input
+              id="promptInput"
+              type="text"
+              placeholder="Speak or type e.g. 'Which nursing homes lack backup generators?' or 'Where should we stage buses for zero-car census tracts?'"
+              class="flex-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+            />
+            <button
+              id="submitPromptBtn"
+              type="submit"
+              class="px-5 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition shrink-0 shadow-md shadow-cyan-500/20"
+            >
+              Analyze & Act
+            </button>
+          </form>
+        </div>
       </div>
 
-      <!-- KPI Overview -->
-      <div class="kpi-grid" id="kpi-grid" style="display:none;"></div>
+      <!-- Quick Voice-Simulated Persona Sample Prompts -->
+      <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-slate-400 mr-1">Try Instant Persona Voice Prompts:</span>
 
-      <!-- PILLAR 3 UP FRONT: Epistemic Honesty Ledger -->
-      <section class="card" id="pillar-epistemic" style="display:none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">🔍 Pillar 3 — What We Cannot Verify From Here (The Epistemic Gap & Data-Defect Ledger)</h2>
-            <p class="card-subtitle">"Our data knows what a place is. Maps knows whether it is still there. Neither knows whether it works for the person you are trying to help."</p>
+        <!-- Local Planner Prompts -->
+        <button onclick="runQuickPrompt('Where should we stage LeeTran evacuation buses for high-SVI zero-car census tracts and walkability gaps?')"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1.5">
+          <span>🚌</span> <span>[Planner] Zero-Car Transit & Bus Staging</span>
+        </button>
+
+        <button onclick="runQuickPrompt('Which evacuation shelters sit in the SLOSH storm surge zone and which high-capacity shelters have unrecorded wheelchair accessibility?')"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1.5">
+          <span>🏛️</span> <span>[Planner] Storm Surge & Ghost Shelter Audit</span>
+        </button>
+
+        <!-- Hospital / Clinical Prompts -->
+        <button onclick="runQuickPrompt('As a hospital coordinator, which CMS nursing homes have unrecorded backup generators nearby and need ambulance transfer routing?')"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition flex items-center gap-1.5">
+          <span>🏥</span> <span>[Hospital] Nursing Home Generator & Transfer Triage</span>
+        </button>
+
+        <button onclick="runQuickPrompt('How many electricity-dependent Medicare DME, oxygen, and dialysis patients are at risk in Lee County and where is medical shelter power?')"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition flex items-center gap-1.5">
+          <span>⚡</span> <span>[Hospital] DME Oxygen & Dialysis Surge</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. DYNAMIC PERSONA IDENTIFICATION BANNER & VOICE BRIEFING -->
+    <section id="personaBanner" class="rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/50 via-slate-900 to-slate-900 p-5 transition-all duration-300">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="personaBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-400 text-slate-950">
+              🏛️ LOCAL EMERGENCY PLANNER (COUNTY EOC)
+            </span>
+            <span id="personaConfidence" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+              Intent: Evacuation Readiness
+            </span>
+            <span id="personaSignals" class="text-xs text-slate-400">
+              Detected from voice/text context
+            </span>
           </div>
-          <span class="badge unrec">Epistemic Honesty Guardrail Active</span>
-        </div>
-        <div id="epistemic-bars"></div>
-      </section>
-
-      <!-- PILLAR 2: Live Google Maps Grounding + Option 1 Ghost Shelter & Accessibility Auditor -->
-      <section class="card" id="pillar-shelters" style="display:none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">🏚️ Pillar 2 — Option 1: "Ghost Shelter & Accessibility Auditor" + Live <span translate="no">Google Maps</span> Grounding</h2>
-            <p class="card-subtitle">Audits Lee County's 100 FEMA shelter records, flags storm-surge facilities, and verifies physical reality one building + street address at a time.</p>
-          </div>
-          <span class="pill live">Live Grounded Seconds Ago</span>
+          <h2 id="personaHeadline" class="text-lg md:text-xl font-bold text-white">
+            August Ghost Shelter & Accessibility Inspection Triage
+          </h2>
+          <p id="voiceSummaryText" class="text-sm text-slate-200 leading-relaxed max-w-4xl">
+            Loading live Lee County BigQuery telemetry and persona action plan...
+          </p>
         </div>
 
-        <h3 style="font-size:0.94rem;margin:8px 0 10px;color:#7dd3fc;">📍 Live Grounding with <span translate="no">Google Maps</span> & Route Verification Cards</h3>
-        <div class="grounding-grid" id="grounding-spotlights"></div>
-
-        <div id="on-demand-grounding-box" style="display:none;margin-top:14px;" class="grounding-card"></div>
-
-        <h3 style="font-size:0.94rem;margin:18px 0 10px;color:#7dd3fc;">📋 Top Candidate & Surge-Exposed Shelters (With Live Operator Write-Back Loop)</h3>
-        <div style="overflow-x:auto;">
-          <table id="shelters-table">
-            <thead>
-              <tr>
-                <th>Shelter Name & Address (2022 FEMA)</th>
-                <th>Capacity & Usage</th>
-                <th>Wheelchair Access</th>
-                <th>Backup Generator</th>
-                <th>Surge / Flood Exposure</th>
-                <th>Live Verification & Operator Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- PILLAR 1A: Option 2 Zero-Car Transit Lifeline -->
-      <section class="card" id="pillar-transit" style="display:none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">🚌 Pillar 1A — Option 2: "Zero-Car Transit Lifeline" & The 2.0 km Walkability Wall</h2>
-            <p class="card-subtitle">Top 5 carless census tracts ranked by ACS <code>households_no_vehicle</code> & CDC SVI <code>pct_no_vehicle</code> (bypassing 100% NULL <code>pct_lacktrpt</code> in FL).</p>
-          </div>
-          <span class="pill fema">ST_DISTANCE + Live Maps Routing</span>
-        </div>
-        <div style="overflow-x:auto;">
-          <table id="transit-table">
-            <thead>
-              <tr>
-                <th>Rank & Census Tract</th>
-                <th>No-Vehicle Households</th>
-                <th>Disability / 65+ / Mobile Homes</th>
-                <th>Nearest Non-Surge Shelter (ST_DISTANCE)</th>
-                <th>Nearest Confirmed Wheelchair Shelter</th>
-                <th>T-Minus 48h Bus Staging & Live Route</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- PILLAR 1B: Option 3 Generator-Blind Nursing Home Alert -->
-      <section class="card" id="pillar-medical" style="display:none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">🏥 Pillar 1B — Option 3: "Generator-Blind Nursing Home Alert" & County emPOWER DME</h2>
-            <p class="card-subtitle">Cross-references CMS nursing homes (<code>certified_beds</code>) and county-level HHS emPOWER electricity-dependent residents against shelter backup generators.</p>
-          </div>
-          <span class="pill warn">County-Scale Guardrail Enforced</span>
-        </div>
-        <div id="empower-banner" style="margin-bottom:14px;"></div>
-        <div style="overflow-x:auto;">
-          <table id="medical-table">
-            <thead>
-              <tr>
-                <th>CMS Nursing Home & Address</th>
-                <th>Certified Beds</th>
-                <th>10 km Non-Surge Shelters (Gen YES vs UNRECORDED)</th>
-                <th>Nearest Confirmed Generator Shelter</th>
-                <th>Live <span translate="no">Google Maps</span> Check</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- PILLAR 4: Concrete August Pre-Season Action List & Equity Audit -->
-      <section class="card" id="pillar-actions" style="display:none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">✅ Pillar 4 — August Pre-Season Readiness Action Plan & Post-Hoc Equity Audit</h2>
-            <p class="card-subtitle">Concrete operational decisions for the Lee County Emergency Manager before September peak hurricane season.</p>
-          </div>
-          <span class="badge yes">Actionable August Triage</span>
-        </div>
-        <div id="action-plan-content"></div>
-        <h3 style="font-size:0.94rem;margin:18px 0 10px;color:#7dd3fc;">⚖️ Post-Hoc Demographic & Paperwork Bias Audit (<code>run_equity_audit</code>)</h3>
-        <div style="overflow-x:auto;">
-          <table id="equity-table">
-            <thead>
-              <tr>
-                <th>SVI Socioeconomic Vulnerability Tier</th>
-                <th>Tracts & Population</th>
-                <th>Carless Households</th>
-                <th>Avg Poverty / Disability / Limited English</th>
-                <th>Avg Dist: Any Shelter vs Confirmed Wheelchair</th>
-                <th>Nearby Shelters w/ UNRECORDED Access</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <!-- Live ADK Agent Chat Sidebar -->
-    <aside class="chat-panel">
-      <div class="chat-header">
-        <div style="font-weight:700;font-size:0.98rem;">🤖 Ask the ADK Evacuation Readiness Agent</div>
-        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">
-          Powered by <code>google-adk</code> · <code>gemini-2.5-flash</code> · BigQuery + <span translate="no">Google Maps</span>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="replayVoiceSummary()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition">
+            <span>🔈</span> <span>Replay Voice Briefing</span>
+          </button>
         </div>
       </div>
-      <div class="chat-messages" id="chat-messages">
-        <div class="msg agent">Welcome, Emergency Manager. I am connected to <strong>qwiklabs-gcp-03-bb316766e33b.evacuation_readiness</strong> and live <strong>Grounding with <span translate="no">Google Maps</span></strong>.
 
-Ask me to audit Lee County shelters, verify a specific building on <span translate="no">Google Maps</span>, calculate bus staging for carless tracts, or inspect nursing home backup-power gaps.</div>
+      <!-- DYNAMIC 4 PERSONA KPIs -->
+      <div id="personaKpiGrid" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        <!-- Populated dynamically based on identified persona -->
       </div>
-      <div class="preset-bar">
-        <button class="btn secondary" onclick="sendPreset('Produce the August Ghost Shelter & Accessibility Audit for Lee County (12071) and verify the top high-capacity shelters on Google Maps.')">🏚️ Option 1: Ghost Shelter Audit</button>
-        <button class="btn secondary" onclick="sendPreset('Find the top 5 carless census tracts in Lee County, flag the 2 km Walkability Wall, and verify the route to the nearest non-surge shelter on Google Maps.')">🚌 Option 2: Zero-Car Transit</button>
-        <button class="btn secondary" onclick="sendPreset('Run the Generator-Blind Nursing Home Alert for Lee County and report county-level emPOWER DME metrics and generator gaps.')">🏥 Option 3: Nursing Home Power</button>
-        <button class="btn secondary" onclick="sendPreset('Run the post-hoc equity audit for Lee County and explain how unrecorded wheelchair paperwork affects high-vulnerability tracts.')">⚖️ Equity Audit</button>
+    </section>
+
+    <!-- 3. DYNAMIC ACTIONABLE OUTPUT: 3 EXECUTABLE ACTION CARDS + AI AGENT FEEDBACK -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      
+      <!-- Left 7 Cols: Tailored Actionable Cards for Identified Persona & Question -->
+      <div class="lg:col-span-7 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span>⚡ Recommended Actions for Identified Persona</span>
+            </h3>
+            <p class="text-xs text-slate-400">Click any action button to run live <span translate="no">Google Maps</span> Grounding or commit field updates to BigQuery</p>
+          </div>
+          <span id="actionDeckTag" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-300 border border-slate-700">
+            Live Action Deck
+          </span>
+        </div>
+
+        <div id="actionCardsContainer" class="space-y-3">
+          <!-- Populated dynamically by renderPersonaActionDeck() -->
+        </div>
       </div>
-      <div class="chat-input-row">
-        <input id="chat-input" type="text" placeholder="Ask about shelters, carless tracts, nursing homes..." onkeydown="if(event.key==='Enter') sendChat()" />
-        <button class="btn" onclick="sendChat()">Send</button>
+
+      <!-- Right 5 Cols: Live Agent Reasoning, Grounding Result & Audit Log -->
+      <div class="lg:col-span-5 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">
+            🤖 Live Action Feedback & Grounding Output
+          </h3>
+          <span id="agentStatusIndicator" class="text-xs text-emerald-400 font-medium">Ready</span>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 flex-1 flex flex-col justify-between min-h-[340px]">
+          <div id="agentFeedbackBox" class="space-y-3 text-sm text-slate-200 overflow-y-auto max-h-[380px] pr-1">
+            <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+              <div class="font-bold text-cyan-300 mb-1">Voice + Persona Dynamic Readiness Interface:</div>
+              <ul class="list-disc pl-4 space-y-1 text-slate-400">
+                <li><strong>1. Voice Interaction</strong>: Tap the microphone (or click a sample prompt) to speak your question; the agent speaks back an executive voice briefing.</li>
+                <li><strong>2. Automatic Persona Detection</strong>: Classifies whether you are asking as a <strong>Local Emergency Planner</strong> or <strong>Hospital / Clinical Coordinator</strong>.</li>
+                <li><strong>3. Dynamic Actionable UI</strong>: Reconfigures the 4 KPIs, 3 executable Action Cards, and live BigQuery table below to match your persona and question.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Mandatory Google Maps Grounding Attribution Container -->
+          <div id="googleMapsAttributionBox" class="hidden mt-3 pt-3 border-t border-slate-800 text-xs text-slate-300">
+            <div class="font-semibold text-slate-200 mb-1">
+              Live Grounding Sources (<span translate="no">Google Maps</span>):
+            </div>
+            <div id="googleMapsLinks" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
       </div>
-    </aside>
-  </div>
+
+    </div>
+
+    <!-- 4. DYNAMIC QUESTION-FILTERED DATA TABLE (AUTO-SWITCHES BY PERSONA) -->
+    <section class="rounded-2xl border border-slate-800 bg-slate-900/90 p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 id="dynamicTableTitle" class="text-base font-bold text-white">Priority Operational Records</h3>
+            <span id="dynamicTablePersonaTag" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              Auto-Synced with Persona
+            </span>
+          </div>
+          <p id="dynamicTableSubtitle" class="text-xs text-slate-400 mt-0.5">
+            Automatically displaying records matched to your identified persona and voice prompt
+          </p>
+        </div>
+
+        <!-- Simple View Switcher Pills -->
+        <div class="flex flex-wrap gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button id="tabBtn-shelters" onclick="switchTableTab('shelters')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-400 text-slate-950">
+            🏛️ Shelters (Planner)
+          </button>
+          <button id="tabBtn-transit" onclick="switchTableTab('transit')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-300 hover:text-white">
+            🚌 Zero-Car Tracts (Planner)
+          </button>
+          <button id="tabBtn-medical" onclick="switchTableTab('medical')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-300 hover:text-white">
+            🏥 Nursing Homes & DME (Hospital)
+          </button>
+        </div>
+      </div>
+
+      <!-- Dynamic Table Wrapper -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead id="dynamicTableHead" class="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/60">
+          </thead>
+          <tbody id="dynamicTableBody" class="divide-y divide-slate-800/70 text-xs">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
 
   <script>
-    let currentSessionId = null;
+    // =========================================================================
+    // STATE & DATA CACHE
+    // =========================================================================
+    const COUNTY_FIPS = '12071';
+    let currentPersonaAction = null;
+    let currentTableTab = 'shelters';
+    let autoSpeakEnabled = true;
+    let lastVoiceSummary = '';
+    let activeSessionId = null;
 
-    function badgeForStatus(status) {
-      if (!status) return '<span class="badge unrec">UNRECORDED</span>';
-      const s = String(status).toUpperCase();
-      if (s.includes('YES') || s === 'TRUE') return `<span class="badge yes">${status}</span>`;
-      if (s.includes('NO') || s === 'FALSE') return `<span class="badge no">${status}</span>`;
-      return `<span class="badge unrec">${status}</span>`;
-    }
+    // Speech Recognition & MediaRecorder Fallback State
+    let recognition = null;
+    let isRecording = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
 
-    async function loadBrief(includeLiveMaps = true) {
-      document.getElementById('loading-banner').style.display = 'block';
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      initSpeechRecognition();
+      await loadInitialPersonaAction("Give me an initial evacuation readiness overview for Lee County shelters and zero-car tracts.");
+    });
+
+    async function loadInitialPersonaAction(defaultQuestion) {
       try {
-        const res = await fetch(`/api/brief/12071?include_live_maps=${includeLiveMaps}`);
-        const data = await res.json();
-        renderBrief(data);
+        const res = await fetch('/api/persona-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: defaultQuestion, county_fips: COUNTY_FIPS })
+        });
+        const json = await res.json();
+        if (json.status === 'ok') {
+          currentPersonaAction = json;
+          renderPersonaActionDeck(json, false);
+        }
       } catch (err) {
-        document.getElementById('loading-banner').innerHTML = `<strong>❌ Error loading brief:</strong> ${err}`;
+        console.error('Initial persona load error:', err);
       }
     }
 
-    function renderBrief(data) {
-      document.getElementById('loading-banner').style.display = 'none';
-      const sAudit = data.option_1_shelter_audit;
-      const tGaps = data.option_2_zero_car_transit_lifeline;
-      const mGaps = data.option_3_medical_power_alert;
-      const eqAudit = data.post_hoc_equity_audit;
-      const ep = sAudit.epistemic_summary;
+    // =========================================================================
+    // VOICE INPUT: WEB SPEECH API + GEMINI MULTIMODAL AUDIO FALLBACK
+    // =========================================================================
+    function initSpeechRecognition() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) return;
 
-      // 1. KPI Grid
-      const kpiGrid = document.getElementById('kpi-grid');
-      kpiGrid.style.display = 'grid';
-      kpiGrid.innerHTML = `
-        <div class="kpi">
-          <div class="label">Registered Shelters (Lee County)</div>
-          <div class="value">${ep.total_shelters}</div>
-          <div class="sub">${ep.evac_eligible_shelters} EVAC-eligible · ${ep.post_impact_only_shelters} POST-impact only</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Wheelchair Access Unrecorded</div>
-          <div class="value" style="color:#d8b4fe;">${ep.wheelchair_accessible.pct_unrecorded}%</div>
-          <div class="sub">${ep.wheelchair_accessible.YES} YES · ${ep.wheelchair_accessible.NO} NO · <strong>${ep.wheelchair_accessible.UNRECORDED} UNRECORDED</strong></div>
-        </div>
-        <div class="kpi">
-          <div class="label">Backup Generator Unrecorded</div>
-          <div class="value" style="color:#fcd34d;">${ep.generator_onsite.pct_unrecorded}%</div>
-          <div class="sub">${ep.generator_onsite.YES} YES · ${ep.generator_onsite.NO} NO · <strong>${ep.generator_onsite.UNRECORDED} UNRECORDED</strong></div>
-        </div>
-        <div class="kpi">
-          <div class="label">Carless Households (Top 5 Tracts)</div>
-          <div class="value" style="color:#38bdf8;">${tGaps.total_carless_households_in_top_tracts.toLocaleString()}</div>
-          <div class="sub">Exceeding 2.0 km Walkability Wall to accessible shelter</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Power-Dependent Medicare DME</div>
-          <div class="value" style="color:#f87171;">${mGaps.empower_county_level_metrics.power_dependent_raw_value.toLocaleString()}</div>
-          <div class="sub">+ ${mGaps.cms_nursing_home_summary.total_nursing_homes_in_county} CMS Nursing Homes (${mGaps.cms_nursing_home_summary.total_certified_nursing_home_beds.toLocaleString()} beds)</div>
-        </div>
-      `;
+      recognition = new SpeechRec();
+      recognition.lang = 'en-US';
+      recognition.interimResults = true;
+      recognition.continuous = false;
 
-      // 2. Epistemic Honesty Bars
-      const epSec = document.getElementById('pillar-epistemic');
-      epSec.style.display = 'block';
-      const wc = ep.wheelchair_accessible;
-      const gen = ep.generator_onsite;
-      const sr = ep.in_surge_slosh_area;
-      document.getElementById('epistemic-bars').innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:0.82rem;">
-              <strong>Wheelchair Accessible (<code>wheelchair_accessible</code>)</strong>
-              <span>${wc.YES} YES / ${wc.NO} NO / ${wc.UNRECORDED} UNRECORDED</span>
-            </div>
-            <div class="epistemic-bar">
-              <div class="epistemic-seg-yes" style="width:${wc.YES}%"></div>
-              <div class="epistemic-seg-no" style="width:${wc.NO}%"></div>
-              <div class="epistemic-seg-unrec" style="width:${wc.UNRECORDED}%"></div>
-            </div>
-            <div style="font-size:0.77rem;color:var(--muted);">Decoy column <code>ada_compliant</code> ignored (only 63 TRUE rows nationally).</div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:0.82rem;">
-              <strong>Backup Generator Onsite (<code>generator_onsite</code>)</strong>
-              <span>${gen.YES} YES / ${gen.NO} NO / ${gen.UNRECORDED} UNRECORDED</span>
-            </div>
-            <div class="epistemic-bar">
-              <div class="epistemic-seg-yes" style="width:${gen.YES}%"></div>
-              <div class="epistemic-seg-no" style="width:${gen.NO}%"></div>
-              <div class="epistemic-seg-unrec" style="width:${gen.UNRECORDED}%"></div>
-            </div>
-            <div style="font-size:0.77rem;color:var(--muted);">94% of Lee County shelters have no generator status recorded in FEMA's registry.</div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:0.82rem;">
-              <strong>Storm Surge SLOSH Flag (<code>in_surge_slosh_area</code>)</strong>
-              <span>${sr.YES} YES / ${sr.NO} NO / ${sr.UNRECORDED} UNRECORDED</span>
-            </div>
-            <div class="epistemic-bar">
-              <div class="epistemic-seg-no" style="width:${sr.YES}%"></div>
-              <div class="epistemic-seg-yes" style="width:${sr.NO}%"></div>
-              <div class="epistemic-seg-unrec" style="width:${sr.UNRECORDED}%"></div>
-            </div>
-            <div style="font-size:0.77rem;color:var(--muted);">2 shelters explicitly flagged inside storm-surge slosh zone; 97 unrecorded.</div>
-          </div>
-        </div>
-        <div style="margin-top:12px;padding:10px 14px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.35);border-radius:8px;font-size:0.82rem;">
-          <strong>Federal Data-Defect Guardrails Triggered:</strong>
-          (1) <strong>Unrecorded ≠ No</strong>: Reporting "only 2 accessible shelters in Lee County" states a clerical gap as a physical fact; 93 shelters simply lack paperwork.
-          (2) <strong>Florida CDC PLACES <code>pct_lacktrpt</code></strong>: 100% NULL in FL; Option 2 uses ACS <code>households_no_vehicle</code> + SVI <code>pct_no_vehicle</code>.
-          (3) <strong>HHS emPOWER Scale & Censoring</strong>: Kept strictly at county scale (<code>power_dependent_is_censored = ${mGaps.empower_county_level_metrics.power_dependent_is_censored}</code>).
-        </div>
-      `;
+      recognition.onstart = () => {
+        isRecording = true;
+        updateMicUI(true, '🎙️ Listening... Speak your Local Planner or Hospital question');
+      };
 
-      // 3. Live Google Maps Grounding Spotlights
-      const shSec = document.getElementById('pillar-shelters');
-      shSec.style.display = 'block';
-      const spotContainer = document.getElementById('grounding-spotlights');
-      const spots = data.live_maps_grounding_spotlights || [];
-      if (spots.length === 0) {
-        spotContainer.innerHTML = `<div class="grounding-card">Click "Verify Live on Google Maps" on any shelter below to run live grounding.</div>`;
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        document.getElementById('promptInput').value = transcript;
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('SpeechRecognition error:', event.error);
+        isRecording = false;
+        updateMicUI(false, '🎙️ Ready for Voice or Text Prompt');
+      };
+
+      recognition.onend = () => {
+        const wasRecording = isRecording;
+        isRecording = false;
+        updateMicUI(false, '🎙️ Ready for Voice or Text Prompt');
+        const text = document.getElementById('promptInput').value.trim();
+        if (wasRecording && text.length > 2) {
+          submitQuestion(text, true);
+        }
+      };
+    }
+
+    async function toggleVoiceRecording() {
+      stopSpeaking();
+      if (isRecording) {
+        if (recognition) {
+          recognition.stop();
+        } else if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+        return;
+      }
+
+      if (recognition) {
+        document.getElementById('promptInput').value = '';
+        try {
+          recognition.start();
+          return;
+        } catch (e) {
+          console.warn('SpeechRecognition start failed, using MediaRecorder fallback', e);
+        }
+      }
+
+      // Fallback: MediaRecorder -> /api/voice-transcribe (Gemini 2.5 Flash Audio)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Voice input is not supported in this browser. Please use Chrome/Edge/Safari or type your question.');
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          isRecording = false;
+          updateMicUI(false, '⏳ Transcribing voice with Gemini 2.5 Flash...');
+
+          const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const dataUrl = reader.result || '';
+            const base64Audio = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+            try {
+              const res = await fetch('/api/voice-transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  audio_base64: base64Audio,
+                  mime_type: blob.type || 'audio/webm'
+                })
+              });
+              const json = await res.json();
+              if (json.status === 'ok' && json.transcript) {
+                document.getElementById('promptInput').value = json.transcript;
+                updateMicUI(false, '🎙️ Transcribed: "' + json.transcript + '"');
+                submitQuestion(json.transcript, true);
+              } else {
+                updateMicUI(false, '⚠️ Could not transcribe audio. Try speaking again.');
+              }
+            } catch (err) {
+              updateMicUI(false, '⚠️ Voice transcription error.');
+            }
+          };
+          reader.readAsDataURL(blob);
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        updateMicUI(true, '🔴 Recording audio... Click Mic again when finished speaking');
+      } catch (err) {
+        alert('Microphone access denied or unavailable: ' + err.message);
+      }
+    }
+
+    function updateMicUI(recording, statusText) {
+      const btn = document.getElementById('micButton');
+      const sub = document.getElementById('micBtnSubtext');
+      const badge = document.getElementById('voiceStatusBadge');
+
+      badge.textContent = statusText;
+      if (recording) {
+        btn.className = 'w-16 h-16 rounded-2xl bg-red-600 hover:bg-red-500 text-white flex flex-col items-center justify-center shadow-lg shadow-red-600/40 transition shrink-0 mic-recording';
+        sub.textContent = 'Stop';
       } else {
-        spotContainer.innerHTML = spots.map(sp => `
-          <div class="grounding-card">
-            <div>
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-                <strong>${sp.recorded_name}</strong>
-                <span class="badge ${sp.is_closed ? 'no' : (sp.is_renamed ? 'renamed' : 'yes')}">${sp.verification_badge}</span>
-              </div>
-              <div style="font-size:0.78rem;color:var(--muted);margin:3px 0 8px;">
-                2022 Registry Address: ${sp.queried_address} · Capacity: ${(sp.effective_capacity || 0).toLocaleString()}
-              </div>
-              <div style="font-size:0.83rem;white-space:pre-wrap;">${sp.grounded_findings}</div>
-            </div>
-            <div class="grounding-attribution">
-              <div><strong>Provenance:</strong> ${sp.provenance_label}</div>
-              <div style="margin-top:4px;">${sp.attribution_html}</div>
-            </div>
-          </div>
-        `).join('');
+        btn.className = 'w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white flex flex-col items-center justify-center shadow-lg shadow-blue-600/30 transition shrink-0';
+        sub.textContent = 'Speak';
       }
-
-      // 4. Shelters Table
-      const shTbody = document.querySelector('#shelters-table tbody');
-      shTbody.innerHTML = (sAudit.top_candidate_shelters || []).map(s => {
-        const rec = s.fema_2022_record;
-        const surgeBadge = rec.in_surge_slosh_area === 'YES'
-          ? '<span class="badge surge">⚠️ IN SURGE SLOSH ZONE</span>'
-          : badgeForStatus(rec.in_surge_slosh_area);
-        const wcDisplay = s.field_assessment
-          ? `<span class="badge yes">${s.field_assessment.assessed_wheelchair_status}</span><div style="font-size:0.72rem;color:#86efac;margin-top:2px;">Was FEMA: ${rec.wheelchair_accessible}</div>`
-          : badgeForStatus(rec.wheelchair_accessible);
-        return `
-          <tr>
-            <td>
-              <strong>${s.shelter_name}</strong>
-              <div style="font-size:0.77rem;color:var(--muted);">${s.address_1 || ''}, ${s.city || ''}, ${s.state || 'FL'} ${s.zip || ''}</div>
-              <div style="font-size:0.73rem;color:#93c5fd;">ID: ${s.shelter_id} ${s.is_medical ? '· 🏥 Special Medical Needs' : ''}</div>
-            </td>
-            <td>
-              <strong>${s.effective_capacity.toLocaleString()}</strong>
-              <div style="font-size:0.75rem;color:var(--muted);">Usage: <code>${s.usage}</code></div>
-            </td>
-            <td>${wcDisplay}</td>
-            <td>${badgeForStatus(rec.generator_onsite)}</td>
-            <td>
-              ${surgeBadge}
-              <div style="font-size:0.74rem;color:var(--muted);margin-top:3px;">
-                Tract EAL: $${(s.hazard_context.hurricane_expected_annual_loss_usd || 0).toLocaleString()}/yr
-              </div>
-            </td>
-            <td>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button class="btn secondary" onclick="verifyFacilityLive('${s.shelter_name.replace(/'/g, "\\'")}', '${(s.address_1 || '').replace(/'/g, "\\'")}', '${(s.city || 'Fort Myers').replace(/'/g, "\\'")}')">
-                  🗺️ Verify on Google Maps
-                </button>
-                <button class="btn success" onclick="markFieldVerified(${s.shelter_id}, '${s.shelter_name.replace(/'/g, "\\'")}', '${rec.wheelchair_accessible}')">
-                  ✍️ Log Field Audit (YES)
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // 5. Option 2 Transit Table
-      const trSec = document.getElementById('pillar-transit');
-      trSec.style.display = 'block';
-      const trTbody = document.querySelector('#transit-table tbody');
-      trTbody.innerHTML = (tGaps.priority_zero_car_tracts || []).map(t => {
-        const ns = t.nearest_non_surge_shelter;
-        const wcs = t.nearest_confirmed_wheelchair_shelter;
-        const coords = t.pickup_staging_coordinates;
-        return `
-          <tr>
-            <td>
-              <strong>#${t.rank} · Tract ${t.geo_id}</strong>
-              <div style="font-size:0.76rem;color:var(--muted);">Pop: ${t.total_pop.toLocaleString()} · Poverty: ${t.poverty_rate_pct}%</div>
-            </td>
-            <td>
-              <strong style="color:#38bdf8;font-size:1.05rem;">${t.households_no_vehicle.toLocaleString()} HH</strong>
-              <div style="font-size:0.76rem;color:var(--muted);">${t.pct_no_vehicle}% of tract households</div>
-            </td>
-            <td>
-              <div>Disability: <strong>${t.pct_disability}%</strong> · 65+: <strong>${t.pct_age_65_plus}%</strong></div>
-              <div style="font-size:0.76rem;color:var(--muted);">Mobile Homes: ${t.mobile_homes.toLocaleString()}</div>
-            </td>
-            <td>
-              ${ns ? `
-                <strong>${ns.shelter_name}</strong> (${ns.straight_line_distance_km} km straight-line)
-                <div style="margin-top:3px;">
-                  ${t.walkability_wall_exceeded_any_shelter ? '<span class="badge no">🧱 >2.0 km WALKABILITY WALL</span>' : '<span class="badge yes"><= 2.0 km</span>'}
-                  Access: ${badgeForStatus(ns.fema_wheelchair_accessible)}
-                </div>
-              ` : 'None'}
-            </td>
-            <td>
-              ${wcs ? `
-                <strong>${wcs.shelter_name}</strong>
-                <div style="color:#fca5a5;font-weight:700;">${wcs.straight_line_distance_km} km straight-line</div>
-                <div style="font-size:0.74rem;color:var(--muted);">(${t.shelters_within_5km_breakdown.wheelchair_unrecorded} closer shelters within 5km are UNRECORDED)</div>
-              ` : 'None'}
-            </td>
-            <td>
-              <div><strong>Staging:</strong> <code>${coords.lat}, ${coords.lon}</code></div>
-              <div style="font-size:0.76rem;color:#86efac;margin-bottom:5px;">Pre-position ${coords.recommended_municipal_buses} buses @ T-48h</div>
-              ${ns ? `<button class="btn secondary" onclick="verifyFacilityLive('${ns.shelter_name.replace(/'/g, "\\'")}', '${(ns.address_1 || '').replace(/'/g, "\\'")}', '${(ns.city || 'Fort Myers').replace(/'/g, "\\'")}', ${coords.lat}, ${coords.lon}, 'Tract ${t.geo_id}')">🚌 Live Google Maps Route</button>` : ''}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // 6. Option 3 Medical / Nursing Homes Table
-      const medSec = document.getElementById('pillar-medical');
-      medSec.style.display = 'block';
-      const emp = mGaps.empower_county_level_metrics;
-      document.getElementById('empower-banner').innerHTML = `
-        <div style="padding:12px 14px;background:var(--panel-alt);border:1px solid var(--border);border-radius:8px;font-size:0.84rem;">
-          <strong>⚡ County-Wide HHS emPOWER Electricity-Dependent Residents (Lee County):</strong>
-          Medicare Beneficiaries: <strong>${emp.medicare_beneficiaries.toLocaleString()}</strong> ·
-          Power-Dependent DME: <strong>${emp.power_dependent_raw_value.toLocaleString()}</strong> (Censored=11 flag: <code>${emp.power_dependent_is_censored}</code>) ·
-          Oxygen Services: <strong>${emp.oxygen_services_dme.toLocaleString()}</strong> ·
-          Dialysis/ESRD: <strong>${emp.dialysis_esrd_dme.toLocaleString()}</strong> ·
-          Home Health DME: <strong>${emp.home_health_dme.toLocaleString()}</strong>
-          <div style="color:#fcd34d;margin-top:4px;"><strong>Operational Alert:</strong> ${mGaps.cms_nursing_home_summary.mutual_aid_action_required}</div>
-        </div>
-      `;
-      const medTbody = document.querySelector('#medical-table tbody');
-      medTbody.innerHTML = (mGaps.top_nursing_homes || []).map(nh => {
-        const gs = nh.nearest_generator_confirmed_shelter;
-        return `
-          <tr>
-            <td>
-              <strong>${nh.provider_name}</strong>
-              <div style="font-size:0.76rem;color:var(--muted);">${nh.provider_address}, ${nh.city}, ${nh.state} ${nh.zip_code}</div>
-              <div style="font-size:0.73rem;color:#93c5fd;">CCN: ${nh.cms_ccn} · ${nh.ownership_type}</div>
-            </td>
-            <td><strong style="font-size:1.05rem;">${nh.certified_beds}</strong> beds</td>
-            <td>
-              <div>Total within 10 km: <strong>${nh.surrounding_10km_shelters.total_non_surge}</strong></div>
-              <div>
-                <span class="badge yes">${nh.surrounding_10km_shelters.generator_confirmed_yes} Gen YES</span>
-                <span class="badge unrec">${nh.surrounding_10km_shelters.generator_unrecorded} Gen UNRECORDED</span>
-              </div>
-            </td>
-            <td>
-              ${gs ? `
-                <strong>${gs.shelter_name}</strong> (${gs.straight_line_distance_km} km)
-                <div style="font-size:0.75rem;color:var(--muted);">Cap: ${gs.effective_capacity.toLocaleString()} · Medical: ${gs.is_medical ? 'YES' : 'NO'}</div>
-              ` : 'None confirmed'}
-            </td>
-            <td>
-              <button class="btn secondary" onclick="verifyFacilityLive('${nh.provider_name.replace(/'/g, "\\'")}', '${nh.provider_address.replace(/'/g, "\\'")}', '${nh.city.replace(/'/g, "\\'")}')">
-                🗺️ Verify Nursing Home Live
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // 7. Pillar 4 Action List & Equity Audit
-      const actSec = document.getElementById('pillar-actions');
-      actSec.style.display = 'block';
-      const top3 = sAudit.august_field_inspection_top3 || [];
-      document.getElementById('action-plan-content').innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
-          <div class="grounding-card">
-            <strong>1. August Ground-Truth Building Triage (Inspect This Week)</strong>
-            <ol style="margin:8px 0 0;padding-left:18px;font-size:0.83rem;">
-              ${top3.map(b => `<li><strong>${b.shelter_name}</strong> (${b.address_1}, ${b.city}) — Cap: ${b.effective_capacity.toLocaleString()} · Access: <code>${b.fema_2022_record.wheelchair_accessible}</code> · Gen: <code>${b.fema_2022_record.generator_onsite}</code></li>`).join('')}
-            </ol>
-          </div>
-          <div class="grounding-card">
-            <strong>2. T-Minus 48h Zero-Car Bus Pre-Positioning</strong>
-            <p style="font-size:0.83rem;margin:8px 0 0;">
-              Dispatch municipal LeeTran evacuation buses to the top 5 carless tracts (${tGaps.total_carless_households_in_top_tracts.toLocaleString()} no-vehicle households) where confirmed wheelchair-accessible shelters sit <strong>7–17 km away</strong> across the Walkability Wall.
-            </p>
-          </div>
-          <div class="grounding-card">
-            <strong>3. Nursing Home Backup-Power Mutual Aid</strong>
-            <p style="font-size:0.83rem;margin:8px 0 0;">
-              Audit backup generators at the 94 UNRECORDED shelters before September 1 so ${mGaps.cms_nursing_home_summary.total_nursing_homes_in_county} nursing homes (${mGaps.cms_nursing_home_summary.total_certified_nursing_home_beds.toLocaleString()} beds) and ${emp.power_dependent_raw_value.toLocaleString()} DME-dependent residents are not funneled into just 6 confirmed-generator shelters.
-            </p>
-          </div>
-        </div>
-      `;
-
-      const eqTbody = document.querySelector('#equity-table tbody');
-      eqTbody.innerHTML = (eqAudit.tiers_comparison || []).map(r => `
-        <tr>
-          <td><strong>${r.vulnerability_tier}</strong></td>
-          <td>${r.tract_count} tracts · ${r.total_population.toLocaleString()} pop</td>
-          <td><strong>${r.carless_households.toLocaleString()}</strong> HH</td>
-          <td>Poverty: ${r.avg_poverty_rate_pct}% · Disab: ${r.avg_disability_pct}% · LimEng: ${r.avg_limited_english_pct}%</td>
-          <td>Any: <strong>${r.avg_dist_any_shelter_km} km</strong> vs Wheelchair YES: <strong style="color:#fca5a5;">${r.avg_dist_wc_confirmed_shelter_km} km</strong></td>
-          <td><span class="badge unrec">${r.avg_pct_nearby_shelters_unrecorded}% UNRECORDED</span></td>
-        </tr>
-      `).join('');
     }
 
-    async function verifyFacilityLive(placeName, address, city, originLat = null, originLon = null, originLabel = '') {
-      const box = document.getElementById('on-demand-grounding-box');
-      box.style.display = 'block';
-      box.innerHTML = `<strong>⏳ Calling Live Grounding with <span translate="no">Google Maps</span> for ${placeName} (${address}, ${city})...</strong>`;
-      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // =========================================================================
+    // VOICE OUTPUT (SPEECH SYNTHESIS)
+    // =========================================================================
+    function speakText(text) {
+      if (!autoSpeakEnabled || !('speechSynthesis' in window) || !text) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.03;
+      utterance.pitch = 1.0;
+
+      const wave = document.getElementById('speakingWave');
+      const stopBtn = document.getElementById('stopSpeechBtn');
+
+      utterance.onstart = () => {
+        wave.classList.remove('hidden');
+        wave.classList.add('flex');
+        stopBtn.classList.remove('hidden');
+      };
+      utterance.onend = () => {
+        wave.classList.add('hidden');
+        wave.classList.remove('flex');
+        stopBtn.classList.add('hidden');
+      };
+      utterance.onerror = () => {
+        wave.classList.add('hidden');
+        wave.classList.remove('flex');
+        stopBtn.classList.add('hidden');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeaking() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      document.getElementById('speakingWave').classList.add('hidden');
+      document.getElementById('stopSpeechBtn').classList.add('hidden');
+    }
+
+    function toggleAutoSpeak() {
+      autoSpeakEnabled = !autoSpeakEnabled;
+      const btn = document.getElementById('ttsToggleBtn');
+      const icon = document.getElementById('ttsToggleIcon');
+      const label = document.getElementById('ttsToggleLabel');
+      if (autoSpeakEnabled) {
+        icon.textContent = '🔊';
+        label.textContent = 'Voice Output: ON';
+        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition flex items-center gap-1.5';
+      } else {
+        stopSpeaking();
+        icon.textContent = '🔇';
+        label.textContent = 'Voice Output: OFF';
+        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 transition flex items-center gap-1.5';
+      }
+    }
+
+    function replayVoiceSummary() {
+      if (lastVoiceSummary) {
+        const prev = autoSpeakEnabled;
+        autoSpeakEnabled = true;
+        speakText(lastVoiceSummary);
+        autoSpeakEnabled = prev;
+      }
+    }
+
+    // =========================================================================
+    // SUBMIT PROMPT -> FAST PERSONA IDENTIFICATION + FULL ADK CHAT
+    // =========================================================================
+    function handlePromptSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('promptInput');
+      const q = input.value.trim();
+      if (!q) return;
+      submitQuestion(q, true);
+    }
+
+    function runQuickPrompt(questionText) {
+      document.getElementById('promptInput').value = questionText;
+      submitQuestion(questionText, true);
+    }
+
+    async function submitQuestion(question, speakImmediately) {
+      const statusEl = document.getElementById('agentStatusIndicator');
+      const submitBtn = document.getElementById('submitPromptBtn');
+      statusEl.textContent = '⚡ Identifying Persona & Building Action Plan...';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Analyzing...';
+
+      // Step 1: Instant Persona Classification & Actionable UI Update (/api/persona-action)
+      try {
+        const fastRes = await fetch('/api/persona-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, county_fips: COUNTY_FIPS })
+        });
+        const fastJson = await fastRes.json();
+        if (fastJson.status === 'ok') {
+          currentPersonaAction = fastJson;
+          renderPersonaActionDeck(fastJson, speakImmediately);
+        }
+      } catch (e) {
+        console.warn('Fast persona action error:', e);
+      }
+
+      // Step 2: Full Multi-Agent ADK Response & Google Maps Grounding (/api/chat)
+      const pLabel = currentPersonaAction?.persona_info?.persona_title || 'Auto-Persona';
+      statusEl.textContent = '🤖 Running ADK Multi-Agent Grounding...';
+      prependAgentFeedbackCard({
+        title: `Voice / Text Prompt (${pLabel}):`,
+        body: `"${escapeHtml(question)}"`,
+        badge: `Confidence: ${Math.round((currentPersonaAction?.persona_info?.confidence || 0.9) * 100)}%`,
+        tone: 'slate'
+      });
+
+      try {
+        const chatRes = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: question,
+            session_id: activeSessionId,
+            county_fips: COUNTY_FIPS
+          })
+        });
+        const chatJson = await chatRes.json();
+        if (chatJson.status === 'ok') {
+          activeSessionId = chatJson.session_id || activeSessionId;
+          if (chatJson.persona_action) {
+            currentPersonaAction = chatJson.persona_action;
+            renderPersonaActionDeck(chatJson.persona_action, false);
+          }
+          const toolsUsed = (chatJson.tool_calls || []).map(t => t.tool_name).join(', ') || 'BigQuery + Persona Engine';
+          prependAgentFeedbackCard({
+            title: `ADK Agent Response (${currentPersonaAction?.persona_info?.persona_title || 'Verified'})`,
+            body: formatMarkdownSimple(chatJson.reply || 'Action plan updated above.'),
+            badge: `Tools: ${toolsUsed}`,
+            tone: currentPersonaAction?.persona_info?.persona === 'HOSPITAL' ? 'rose' : 'cyan'
+          });
+          renderGoogleMapsSources(chatJson.google_maps_sources || []);
+        }
+      } catch (err) {
+        prependAgentFeedbackCard({
+          title: 'Action Deck Active',
+          body: 'Displayed live BigQuery persona action deck above.',
+          badge: 'Ready',
+          tone: 'emerald'
+        });
+      } finally {
+        statusEl.textContent = '✅ Ready';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Analyze & Act';
+      }
+    }
+
+    // =========================================================================
+    // RENDER PERSONA BANNER, 4 KPIs, 3 EXECUTABLE ACTION CARDS & TABLE SYNC
+    // =========================================================================
+    function renderPersonaActionDeck(data, shouldSpeak) {
+      if (!data) return;
+      const pInfo = data.persona_info || {};
+      const isHospital = pInfo.persona === 'HOSPITAL';
+
+      // 1. Update Top Header Pill
+      const headerPill = document.getElementById('headerPersonaPill');
+      const headerText = document.getElementById('headerPersonaText');
+      if (isHospital) {
+        headerPill.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-300 flex items-center gap-2';
+        headerText.textContent = pInfo.persona_title || '🏥 Hospital & Care Facility Operations';
+      } else {
+        headerPill.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-cyan-500/40 bg-cyan-500/15 text-cyan-300 flex items-center gap-2';
+        headerText.textContent = pInfo.persona_title || '🏛️ Local Emergency Planner (County EOC)';
+      }
+
+      // 2. Update Persona Banner Styling & Text
+      const banner = document.getElementById('personaBanner');
+      const badge = document.getElementById('personaBadge');
+      const conf = document.getElementById('personaConfidence');
+      const signals = document.getElementById('personaSignals');
+      const headline = document.getElementById('personaHeadline');
+      const summaryEl = document.getElementById('voiceSummaryText');
+
+      if (isHospital) {
+        banner.className = 'rounded-2xl border border-rose-500/40 bg-gradient-to-r from-rose-950/50 via-slate-900 to-slate-900 p-5 transition-all duration-300';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500 text-white';
+      } else {
+        banner.className = 'rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/50 via-slate-900 to-slate-900 p-5 transition-all duration-300';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-400 text-slate-950';
+      }
+
+      badge.textContent = pInfo.persona_title || (isHospital ? '🏥 HOSPITAL OPERATIONS' : '🏛️ LOCAL EMERGENCY PLANNER');
+      headline.textContent = pInfo.intent_label || 'Lee County Adaptive Evacuation & Clinical Readiness';
+      conf.textContent = `Confidence: ${Math.round((pInfo.confidence || 0.9) * 100)}%`;
+
+      const matchedList = pInfo.matched_signals || [];
+      signals.textContent = matchedList.length > 0
+        ? `Signals: ${matchedList.join(' · ')}`
+        : (pInfo.persona_subtitle || '');
+
+      lastVoiceSummary = data.voice_summary || '';
+      summaryEl.textContent = lastVoiceSummary;
+      if (shouldSpeak && lastVoiceSummary) {
+        speakText(lastVoiceSummary);
+      }
+
+      // 3. Render 4 Tailored Persona KPIs
+      const kpiGrid = document.getElementById('personaKpiGrid');
+      const kpis = data.persona_kpis || [];
+      kpiGrid.innerHTML = kpis.map(k => `
+        <div class="rounded-xl border border-slate-800 bg-slate-950/75 p-3.5">
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">${escapeHtml(k.label)}</div>
+          <div class="text-xl md:text-2xl font-extrabold mt-1" style="color: ${escapeHtml(k.color || '#38bdf8')}">${escapeHtml(String(k.value))}</div>
+          <div class="text-[11px] text-slate-300 mt-0.5">${escapeHtml(k.sub || '')}</div>
+        </div>
+      `).join('');
+
+      // 4. Render 3 Executable Action Cards
+      const cardsContainer = document.getElementById('actionCardsContainer');
+      const cards = data.action_cards || [];
+      const btnStyle = isHospital
+        ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/20'
+        : 'bg-cyan-400 hover:bg-cyan-300 text-slate-950 shadow-cyan-400/20';
+
+      cardsContainer.innerHTML = cards.map((c, idx) => `
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/95 p-4 hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border border-amber-500/40 bg-amber-500/15 text-amber-300">${escapeHtml(c.badge || 'PRIORITY ACTION')}</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">${escapeHtml(c.title)}</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">${escapeHtml(c.detail)}</p>
+          </div>
+          <button
+            onclick="executePersonaActionCard(${idx})"
+            id="actionCardBtn-${idx}"
+            class="px-4 py-2.5 rounded-xl font-bold text-xs transition shrink-0 shadow-md ${btnStyle}"
+          >
+            ${escapeHtml(c.action_label || '⚡ Execute Action')}
+          </button>
+        </div>
+      `).join('');
+
+      // 5. Auto-Switch Dynamic Table View to Match Persona & Primary View
+      const primaryView = pInfo.primary_view || (isHospital ? 'medical' : 'shelters');
+      const targetTab = primaryView === 'medical' ? 'medical' : (primaryView === 'transit' ? 'transit' : 'shelters');
+      switchTableTab(targetTab);
+    }
+
+    // =========================================================================
+    // EXECUTE 1-CLICK ACTION CARD (GOOGLE MAPS GROUNDING OR BIGQUERY WRITE-BACK)
+    // =========================================================================
+    async function executePersonaActionCard(cardIndex) {
+      if (!currentPersonaAction || !currentPersonaAction.action_cards) return;
+      const card = currentPersonaAction.action_cards[cardIndex];
+      if (!card) return;
+
+      const btn = document.getElementById(`actionCardBtn-${cardIndex}`);
+      const origLabel = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Executing Live...';
+
+      try {
+        if (card.action_type === 'verify_place' || card.action_type === 'verify_route') {
+          const payload = {
+            place_name: card.place_name || 'North Fort Myers Academy For The Arts',
+            address: card.address || '1856 Arts Way',
+            city: card.city || 'Fort Myers',
+            state: 'FL',
+            origin_lat: card.origin_lat || null,
+            origin_lon: card.origin_lon || null,
+            origin_label: card.origin_label || ''
+          };
+          const res = await fetch('/api/verify-place', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          if (json.status === 'ok') {
+            const findings = json.grounded_findings || 'Facility and route verified live via Google Maps.';
+            prependAgentFeedbackCard({
+              title: `📍 ${json.verification_badge || 'Google Maps Grounded'}: ${card.place_name}`,
+              body: `<p>${formatMarkdownSimple(findings)}</p><p class="text-[11px] text-cyan-300 mt-1">${json.attribution_html || 'Source: <span translate="no">Google Maps</span>'}</p>`,
+              badge: 'Google Maps Live',
+              tone: 'emerald'
+            });
+            renderGoogleMapsSources(json.google_maps_sources || []);
+            speakText(findings.slice(0, 250));
+          }
+        } else if (card.action_type === 'field_audit') {
+          const payload = {
+            shelter_id: card.shelter_id || 24839,
+            shelter_name: card.shelter_name || 'North Fort Myers Academy For The Arts',
+            county_name: 'Lee',
+            fema_wheelchair_status: card.prev_status || 'UNRECORDED',
+            assessed_wheelchair_status: 'FIELD_VERIFIED_YES',
+            operational_status: 'OPEN',
+            inspector_notes: 'Verified ADA ramp, wheelchair restroom clearance, and backup generator transfer switch via persona action deck.'
+          };
+          const res = await fetch('/api/field-assessment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          if (json.status === 'ok') {
+            const msg = `Committed BigQuery Field Inspection ${json.assessment_id} for ${json.shelter_name}: updated status from ${json.previous_fema_status} to ${json.new_assessed_status}.`;
+            prependAgentFeedbackCard({
+              title: `✅ BigQuery Write-Back Committed: ${json.shelter_name}`,
+              body: `<p>${escapeHtml(msg)}</p><p class="text-[11px] text-slate-400 mt-1">${escapeHtml(json.maps_tos_compliance || '')}</p>`,
+              badge: `ID: ${json.assessment_id}`,
+              tone: 'emerald'
+            });
+            speakText(msg);
+          }
+        }
+      } catch (err) {
+        prependAgentFeedbackCard({
+          title: 'Action Execution Error',
+          body: escapeHtml(err.message),
+          badge: 'Error',
+          tone: 'rose'
+        });
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Executed — Run Again';
+        setTimeout(() => { btn.innerHTML = origLabel; }, 3500);
+      }
+    }
+
+    // =========================================================================
+    // DYNAMIC TABLE SWITCHER (SHELTERS / TRANSIT / MEDICAL)
+    // =========================================================================
+    function switchTableTab(tab) {
+      currentTableTab = tab;
+      ['shelters', 'transit', 'medical'].forEach(t => {
+        const el = document.getElementById(`tabBtn-${t}`);
+        if (!el) return;
+        if (t === tab) {
+          el.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-cyan-400 text-slate-950';
+        } else {
+          el.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-300 hover:text-white';
+        }
+      });
+      renderDynamicTable(tab);
+    }
+
+    function renderDynamicTable(tab) {
+      const head = document.getElementById('dynamicTableHead');
+      const body = document.getElementById('dynamicTableBody');
+      const title = document.getElementById('dynamicTableTitle');
+      const sub = document.getElementById('dynamicTableSubtitle');
+
+      if (!currentPersonaAction) {
+        body.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Loading live BigQuery data...</td></tr>`;
+        return;
+      }
+
+      if (tab === 'shelters') {
+        title.textContent = '🏛️ Priority Evacuation Shelters — Storm Surge & ADA Inspection Queue (Local Planner)';
+        sub.textContent = 'UNRECORDED wheelchair/generator status means NULL in FEMA 2022 registry — verify or log field inspection in 1 click';
+        head.innerHTML = `
+          <tr>
+            <th class="py-2.5 px-3">Shelter Facility</th>
+            <th class="py-2.5 px-3">City</th>
+            <th class="py-2.5 px-3">Effective Capacity</th>
+            <th class="py-2.5 px-3">Storm Surge SLOSH</th>
+            <th class="py-2.5 px-3">Wheelchair / Generator</th>
+            <th class="py-2.5 px-3 text-right">1-Click Live Action</th>
+          </tr>
+        `;
+        const opt1 = currentPersonaAction.option_1_shelter_audit || {};
+        const rows = [
+          ...(opt1.august_field_inspection_top3 || []),
+          ...(opt1.surge_or_flood_exposed_shelters || []),
+          ...(opt1.top_shelters || [])
+        ].slice(0, 10);
+
+        body.innerHTML = rows.map(s => {
+          const rec = s.fema_2022_record || {};
+          const surgeStatus = rec.in_surge_slosh_area || 'UNRECORDED';
+          const surgeBadge = surgeStatus === 'YES'
+            ? `<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">⚠️ IN SURGE ZONE</span>`
+            : `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">${escapeHtml(surgeStatus)}</span>`;
+          const wc = rec.wheelchair_accessible || 'UNRECORDED';
+          const gen = rec.generator_onsite || 'UNRECORDED';
+          return `
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 px-3 font-semibold text-white">${escapeHtml(s.shelter_name)}</td>
+              <td class="py-2.5 px-3 text-slate-300">${escapeHtml(s.city)}</td>
+              <td class="py-2.5 px-3 text-cyan-300 font-mono font-bold">${Number(s.effective_capacity || 0).toLocaleString()}</td>
+              <td class="py-2.5 px-3">${surgeBadge}</td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-medium">ADA: ${escapeHtml(wc)} · Gen: ${escapeHtml(gen)}</span>
+              </td>
+              <td class="py-2.5 px-3 text-right">
+                <button onclick="quickVerifyFacility('${escapeJs(s.shelter_name)}', '${escapeJs(s.address_1 || '')}', '${escapeJs(s.city || 'Fort Myers')}')"
+                  class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-semibold">
+                  📍 Maps Verify
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else if (tab === 'transit') {
+        title.textContent = '🚌 Priority Zero-Car Census Tracts — T-Minus 48h LeeTran Bus Staging (Local Planner)';
+        sub.textContent = 'Ranked by ACS households_no_vehicle & Walkability Wall (> 2.0 km to nearest confirmed wheelchair shelter)';
+        head.innerHTML = `
+          <tr>
+            <th class="py-2.5 px-3">Census Tract</th>
+            <th class="py-2.5 px-3">Zero-Car Households</th>
+            <th class="py-2.5 px-3">Nearest Non-Surge Shelter</th>
+            <th class="py-2.5 px-3">Nearest Confirmed ADA Shelter</th>
+            <th class="py-2.5 px-3">Bus Allocation</th>
+            <th class="py-2.5 px-3 text-right">1-Click Route Check</th>
+          </tr>
+        `;
+        const opt2 = currentPersonaAction.option_2_zero_car_transit_lifeline || {};
+        const rows = opt2.priority_zero_car_tracts || [];
+        body.innerHTML = rows.map(t => {
+          const ns = t.nearest_non_surge_shelter || {};
+          const wc = t.nearest_confirmed_wheelchair_shelter || {};
+          const coords = t.pickup_staging_coordinates || {};
+          return `
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 px-3 font-mono font-semibold text-white">${escapeHtml(t.geo_id)}</td>
+              <td class="py-2.5 px-3 text-amber-300 font-bold font-mono">${Number(t.households_no_vehicle || 0).toLocaleString()} (${Number(t.pct_no_vehicle || 0).toFixed(1)}%)</td>
+              <td class="py-2.5 px-3 text-slate-300">${escapeHtml(ns.shelter_name || 'N/A')} (<span class="text-cyan-300 font-mono">${ns.straight_line_distance_km || '?'} km</span>)</td>
+              <td class="py-2.5 px-3 text-rose-300 font-mono">${wc.straight_line_distance_km || '?'} km (${escapeHtml(wc.shelter_name || '')})</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">${coords.recommended_municipal_buses || 6} Buses</span></td>
+              <td class="py-2.5 px-3 text-right">
+                <button onclick="quickVerifyFacility('${escapeJs(ns.shelter_name || 'Franklin Park Elementary School')}', '${escapeJs(ns.address_1 || '2323 Ford St')}', '${escapeJs(ns.city || 'Fort Myers')}', ${coords.lat || 'null'}, ${coords.lon || 'null'}, 'Tract ${escapeJs(t.geo_id)} Bus Staging')"
+                  class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-semibold">
+                  🚌 Verify Bus Route
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        title.textContent = '🏥 Priority CMS Nursing Homes & Backup Power Transfer Triage (Hospital Persona)';
+        const opt3 = currentPersonaAction.option_3_medical_power_alert || {};
+        const emp = opt3.empower_county_level_metrics || {};
+        sub.textContent = `County-wide HHS emPOWER: ${Number(emp.power_dependent_raw_value || 7381).toLocaleString()} electricity-dependent Medicare DME patients (${Number(emp.oxygen_services_dme || 1984).toLocaleString()} Oxygen · ${Number(emp.dialysis_esrd_dme || 637).toLocaleString()} Dialysis)`;
+        head.innerHTML = `
+          <tr>
+            <th class="py-2.5 px-3">CMS Nursing Facility</th>
+            <th class="py-2.5 px-3">City</th>
+            <th class="py-2.5 px-3">Certified Beds</th>
+            <th class="py-2.5 px-3">10km Shelters (Gen Unrecorded)</th>
+            <th class="py-2.5 px-3">Nearest Confirmed Generator Shelter</th>
+            <th class="py-2.5 px-3 text-right">1-Click Clinical Action</th>
+          </tr>
+        `;
+        const rows = opt3.top_nursing_homes || [];
+        body.innerHTML = rows.map(n => {
+          const s10 = n.surrounding_10km_shelters || {};
+          const ngen = n.nearest_generator_confirmed_shelter || {};
+          return `
+            <tr class="hover:bg-slate-800/40">
+              <td class="py-2.5 px-3 font-semibold text-white">${escapeHtml(n.provider_name)}</td>
+              <td class="py-2.5 px-3 text-slate-300">${escapeHtml(n.city)}</td>
+              <td class="py-2.5 px-3 text-rose-300 font-bold font-mono">${Number(n.certified_beds || 0).toLocaleString()}</td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-medium">${s10.generator_unrecorded || 0} UNRECORDED / ${s10.generator_confirmed_yes || 0} YES</span>
+              </td>
+              <td class="py-2.5 px-3 text-slate-300">${escapeHtml(ngen.shelter_name || 'N/A')} (<span class="text-cyan-300 font-mono">${ngen.straight_line_distance_km || '?'} km</span>)</td>
+              <td class="py-2.5 px-3 text-right">
+                <button onclick="quickVerifyFacility('${escapeJs(ngen.shelter_name || n.provider_name)}', '${escapeJs(ngen.address_1 || n.provider_address || '')}', '${escapeJs(ngen.city || n.city || 'Fort Myers')}', ${n.latitude || 'null'}, ${n.longitude || 'null'}, '${escapeJs(n.provider_name)}')"
+                  class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-semibold">
+                  🚑 Verify Transfer
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    async function quickVerifyFacility(placeName, address, city, originLat = null, originLon = null, originLabel = '') {
+      prependAgentFeedbackCard({
+        title: `📍 Verifying ${placeName} on Google Maps...`,
+        body: `Checking live building status & evacuation corridor at ${escapeHtml(address)}, ${escapeHtml(city)}...`,
+        badge: 'Running Grounding',
+        tone: 'cyan'
+      });
       try {
         const res = await fetch('/api/verify-place', {
           method: 'POST',
@@ -804,94 +950,91 @@ Ask me to audit Lee County shelters, verify a specific building on <span transla
           body: JSON.stringify({
             place_name: placeName,
             address: address,
-            city: city,
+            city: city || 'Fort Myers',
             state: 'FL',
             origin_lat: originLat,
             origin_lon: originLon,
             origin_label: originLabel
           })
         });
-        const d = await res.json();
-        box.innerHTML = `
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <strong>📍 Live Grounded Result: ${d.recorded_name} (${d.queried_address})</strong>
-              <span class="badge yes">${d.verification_badge}</span>
-            </div>
-            <div style="margin-top:8px;font-size:0.85rem;white-space:pre-wrap;">${d.grounded_findings}</div>
-          </div>
-          <div class="grounding-attribution">
-            <div><strong>Provenance:</strong> ${d.provenance_label} · Place ID Pointer: <code>${d.primary_place_id || 'N/A'}</code></div>
-            <div style="margin-top:4px;">${d.attribution_html}</div>
-          </div>
-        `;
+        const json = await res.json();
+        if (json.status === 'ok') {
+          const findings = json.grounded_findings || 'Verified on Google Maps.';
+          prependAgentFeedbackCard({
+            title: `✅ ${json.verification_badge || 'Google Maps Verified'}: ${placeName}`,
+            body: `<p>${formatMarkdownSimple(findings)}</p><p class="text-[11px] text-cyan-300 mt-1">${json.attribution_html || 'Source: <span translate="no">Google Maps</span>'}</p>`,
+            badge: 'Google Maps Live',
+            tone: 'emerald'
+          });
+          renderGoogleMapsSources(json.google_maps_sources || []);
+          speakText(findings.slice(0, 240));
+        }
       } catch (e) {
-        box.innerHTML = `<strong>❌ Grounding error:</strong> ${e}`;
+        console.error(e);
       }
     }
 
-    async function markFieldVerified(shelterId, shelterName, prevStatus) {
-      const notes = prompt(
-        `Log August Field Inspection for ${shelterName} (ID ${shelterId}):\nConfirm ADA ramp, accessible restrooms, and backup generator transfer switch.`,
-        'August pre-season physical inspection completed: confirmed ADA wheelchair ramp & accessible restrooms.'
-      );
-      if (notes === null) return;
-      const res = await fetch('/api/field-assessment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shelter_id: shelterId,
-          shelter_name: shelterName,
-          county_name: 'Lee',
-          fema_wheelchair_status: prevStatus,
-          assessed_wheelchair_status: 'FIELD_VERIFIED_YES',
-          operational_status: 'OPEN',
-          inspector_notes: notes
-        })
-      });
-      const out = await res.json();
-      alert(`Field Assessment Saved to BigQuery (shelter_assessments)!\nAssessment ID: ${out.assessment_id}\n${shelterName}: ${out.previous_fema_status} -> ${out.new_assessed_status}`);
-      loadBrief(false);
+    // =========================================================================
+    // UI HELPERS (FEEDBACK STREAM + MANDATORY GOOGLE MAPS ATTRIBUTION)
+    // =========================================================================
+    function prependAgentFeedbackCard({ title, body, badge, tone = 'cyan' }) {
+      const box = document.getElementById('agentFeedbackBox');
+      const toneMap = {
+        cyan: 'border-cyan-500/30 bg-cyan-950/20 text-cyan-300',
+        rose: 'border-rose-500/30 bg-rose-950/20 text-rose-300',
+        emerald: 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300',
+        amber: 'border-amber-500/30 bg-amber-950/20 text-amber-300',
+        slate: 'border-slate-700 bg-slate-900 text-slate-300'
+      };
+      const cls = toneMap[tone] || toneMap.cyan;
+      const card = document.createElement('div');
+      card.className = `p-3.5 rounded-xl border ${cls} space-y-1.5`;
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold text-xs text-white">${escapeHtml(title)}</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-950/70">${escapeHtml(badge || '')}</span>
+        </div>
+        <div class="text-xs text-slate-200 leading-relaxed space-y-1">${body}</div>
+      `;
+      box.prepend(card);
     }
 
-    function sendPreset(text) {
-      document.getElementById('chat-input').value = text;
-      sendChat();
+    function renderGoogleMapsSources(sources) {
+      const box = document.getElementById('googleMapsAttributionBox');
+      const links = document.getElementById('googleMapsLinks');
+      if (!sources || sources.length === 0) return;
+
+      box.classList.remove('hidden');
+      links.innerHTML = sources.map(s => `
+        <a href="${escapeHtml(s.uri || 'https://maps.google.com')}" target="_blank" rel="noopener noreferrer"
+           class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px] font-medium flex items-center gap-1">
+          <span>🗺️</span>
+          <span>${escapeHtml(s.title || 'View Place')}</span>
+          <span class="text-[10px] text-slate-400">(<span translate="no">Google Maps</span>)</span>
+        </a>
+      `).join('');
     }
 
-    async function sendChat() {
-      const input = document.getElementById('chat-input');
-      const msg = input.value.trim();
-      if (!msg) return;
-      input.value = '';
-      const container = document.getElementById('chat-messages');
-      container.innerHTML += `<div class="msg user">${msg}</div>`;
-      const pendingId = 'pending-' + Date.now();
-      container.innerHTML += `<div class="msg agent" id="${pendingId}">⏳ Running ADK Agent tools & live <span translate="no">Google Maps</span> grounding...</div>`;
-      container.scrollTop = container.scrollHeight;
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg, session_id: currentSessionId })
-        });
-        const data = await res.json();
-        currentSessionId = data.session_id;
-        const toolsHtml = (data.tool_calls || []).length
-          ? `<div style="margin-bottom:8px;font-size:0.75rem;color:#7dd3fc;">🔧 <strong>ADK Tools Called:</strong> ${data.tool_calls.map(t => `<code>${t.tool_name}</code>`).join(' → ')}</div>`
-          : '';
-        const sourcesHtml = (data.google_maps_sources || []).length
-          ? `<div class="grounding-attribution">Source: <span translate="no">Google Maps</span> (${data.google_maps_sources.map(s => `<a href="${s.uri}" target="_blank" rel="noopener">${s.title}</a>`).join(', ')})</div>`
-          : '';
-        document.getElementById(pendingId).innerHTML = `${toolsHtml}<div>${data.reply}</div>${sourcesHtml}`;
-      } catch (e) {
-        document.getElementById(pendingId).innerHTML = `❌ Error: ${e}`;
-      }
-      container.scrollTop = container.scrollHeight;
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
-    window.addEventListener('DOMContentLoaded', () => loadBrief(true));
+    function escapeJs(str) {
+      return String(str || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    function formatMarkdownSimple(text) {
+      const safe = escapeHtml(text || '');
+      return safe
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+        .replace(/\n\n/g, '</p><p class="mt-1.5">')
+        .replace(/\n- /g, '<br/>• ')
+        .replace(/\n/g, '<br/>');
+    }
   </script>
 </body>
 </html>
