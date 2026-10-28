@@ -33,6 +33,55 @@ Emergency managers and hospital planners preparing pre-season readiness briefs f
 
 ---
 
+### 3. System Architecture (End-to-End Diagram & Stack)
+
+```mermaid
+flowchart TB
+    subgraph Client["1. Client Tier — Plain-English Geospatial & Voice UI (agent/static/index.html)"]
+        UI["67-County Selector + Role Switcher (Planner vs. Hospital View)"]
+        MAP["Interactive In-Map Overlays (Leaflet + Google Maps Road/Satellite + Street Embed)"]
+        MIC["Voice Mic Input & Audio Player (Stop / Replay Controls)"]
+    end
+
+    subgraph Runtime["2. Cloud Run Runtime Tier — FastAPI Server (agent/server.py)"]
+        API["REST Endpoints: /api/persona-action · /api/chat · /api/verify-place · /api/field-assessment · /api/voice-tts"]
+    end
+
+    subgraph AgentTier["3. Google ADK Multi-Agent Tier (agent/evacuation_agent/)"]
+        ROOT["Root Orchestrator Agent (root_agent)<br/>Vertex AI Gemini + Parallel ThreadPoolExecutor (4 Workers)"]
+        SUB["Maps Grounding Sub-Agent (AgentTool)<br/>maps_grounding_subagent"]
+        VOICE["Voice & Audio AI<br/>Gemini 2.5 Flash Multimodal STT + Native TTS ('Kore' WAV)"]
+    end
+
+    subgraph DataAndTools["4. Data, MCP & Live Grounding Tier"]
+        BQ["BigQuery Spatial SQL (ST_DISTANCE · ST_GEOGPOINT)<br/>5 Federal Tables + shelter_assessments Write-Back"]
+        MCP["Google-Managed BigQuery MCP Server (McpToolset)"]
+        GMAPS["Vertex AI Grounding with Google Maps (Places + Street Routing)"]
+    end
+
+    UI --> API
+    MAP --> API
+    MIC --> API
+    API --> ROOT
+    API --> VOICE
+    ROOT -->|"Parallel Spatial Audits & Write-Back"| BQ
+    ROOT -->|"Managed MCP Queries"| MCP
+    ROOT -->|"Facility & Route Verification"| SUB
+    SUB -->|"Live Grounded Places + Drive Times"| GMAPS
+```
+
+| Architecture Layer | Technology / Component | Role in EvacPulse AI |
+|---|---|---|
+| **1. Presentation Layer** | Single-Page Geospatial & Voice UI (`index.html`) | 67-county selector, Planner vs. Hospital views, interactive Google Maps Road/Satellite overlays, and voice-triggered audio controls. |
+| **2. Application Runtime** | **Google Cloud Run** + **FastAPI** (`server.py`) | Serverless container hosting async REST endpoints and ADK `Runner` sessions. |
+| **3. Agent Orchestration** | **Google ADK (`google-adk`)** + **Vertex AI Gemini** (`agent.py`) | Multi-agent hierarchy (`root_agent` + `maps_grounding_subagent` wrapped in `AgentTool`) combining custom spatial tools, Managed MCP, and Maps Grounding. |
+| **4. Live Differentiator** | **Vertex AI Grounding with Google Maps** (`tools.py`) | Verifies live building operating status, detects facility renamings, checks wheelchair access, and computes real street drive times (`places` + `routing`). |
+| **5. Managed MCP** | **Google-Managed BigQuery MCP (`McpToolset`)** | Standardized Model Context Protocol integration for BigQuery schema and table exploration. |
+| **6. Data & Spatial SQL** | **Google BigQuery** (`ST_DISTANCE`, `ST_GEOGPOINT`) | Parallel spatial audits across `shelters`, `vulnerability_tracts`, `hazard_tracts`, `care_facilities`, `power_dependent_counties`, plus live write-back to `shelter_assessments`. |
+| **7. Voice & Speech AI** | **Vertex AI Gemini 2.5 Flash Multimodal & TTS (`Kore`)** | Transcribes spoken queries and synthesizes natural paraphrased spoken briefings (`audio/wav`) on voice input. |
+
+---
+
 # Challenge 4—Adaptive Evacuation Readiness & Vulnerable Community Planning
 
 **Agents for Impact 2026**
